@@ -72,6 +72,14 @@ workflow CALLINGCARDS {
     ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
 
     //
+    // MODULE: Split reads by TF, trim off barcodes, etc
+    // TODO parallelize this step in code
+    SPLIT_TRIM (
+        INPUT_CHECK.out.reads
+    )
+    ch_versions = ch_versions.mix(SPLIT_TRIM.out.versions.first())
+
+    //
     // MODULE: Run FastQC
     //
     FASTQC (
@@ -79,6 +87,32 @@ workflow CALLINGCARDS {
     )
     ch_versions = ch_versions.mix(FASTQC.out.versions.first())
 
+    // MODULE: Run bowtie2
+    // TODO parallelize this step
+    ALIGN (
+        INPUT_CHECK.out.reads
+    )
+    ch_versions = ch_versions.mix(ALIGN.out.versions.first())
+
+    //
+    // MODULE: run BamQC
+    // TODO parallelize this step
+    BAMQC (
+        ALIGN.out.bams // NOTE NEED TO SPLIT THIS ? HOW HANDLED IN RNASEQ?
+    )
+    ch_versions = ch_versions.mix(BAMQC.out.versions.first())
+
+    //
+    // MODULE: Run Quantification
+    // TODO parallelize
+    QUANTIFY (
+        ALIGN.out.bams // NOTE THAT THIS IS SPLIT FROM THE ALIGN STEP
+    )
+    ch_versions = ch_versions.mix(QUANTIFY.out.versions.first())
+
+    //
+    // collect software versions into file
+    //
     CUSTOM_DUMPSOFTWAREVERSIONS (
         ch_versions.unique().collectFile(name: 'collated_versions.yml')
     )
@@ -95,6 +129,8 @@ workflow CALLINGCARDS {
     ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
     ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
     ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
+    // add BAMQC output here, also -- see RNAseq pipeline
+
 
     MULTIQC (
         ch_multiqc_files.collect()
