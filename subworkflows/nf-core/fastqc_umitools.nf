@@ -12,8 +12,11 @@ workflow FASTQC_UMITOOLS {
 
     main:
 
+    ch_versions = Channel.empty()
+
     // todo error checking on this -- should not be empty?
     umi_log   = Channel.empty()
+    umi_reads = Channel.empty()
     // run umi extract to add barcodes to fastq id lines
     UMITOOLS_EXTRACT ( reads ).reads.set { umi_reads }
 
@@ -25,12 +28,12 @@ workflow FASTQC_UMITOOLS {
     fastqc_html = Channel.empty()
     fastqc_zip  = Channel.empty()
 
-    FASTQC ( umi_reads ).html.set { fastqc_html }
+    FASTQC ( reads ).html.set { fastqc_html }
     fastqc_zip  = FASTQC.out.zip
     ch_versions = ch_versions.mix(FASTQC.out.versions.first())
 
     emit:
-    reads = umi_reads // channel: [ val(meta), [ reads ] ]
+    reads = umi_reads  // TODO channel: [ val(meta), [ reads ] ]
 
     fastqc_html        // channel: [ val(meta), [ html ] ]
     fastqc_zip         // channel: [ val(meta), [ zip ] ]

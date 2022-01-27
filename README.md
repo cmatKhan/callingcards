@@ -14,6 +14,114 @@
 [![Follow on Twitter](http://img.shields.io/badge/twitter-%40nf__core-1DA1F2?labelColor=000000&logo=twitter)](https://twitter.com/nf_core)
 [![Watch on YouTube](http://img.shields.io/badge/youtube-nf--core-FF0000?labelColor=000000&logo=youtube)](https://www.youtube.com/c/nf-core)
 
+## DEVELOPMENT NOTES
+
+Currently, running through alignment. command looks like:
+
+```
+nextflow run nf-core-callingcards/main.nf -c local.config -params-file params.json -resume
+```
+
+params file looks like
+
+```
+{
+  "input":"input_samplesheet.csv",
+  "fasta":"\/home\/oguzkhan\/ref\/S288C_R64\/GCF_000146045.2_R64_genomic.fa",
+  "r1_bc_pattern":"NNNNNXXXXXXXXXXXXXXXXX",
+  "r2_bc_pattern":"NNNNNNNNXXXX"
+}
+```
+input file looks like
+```
+sample,fastq_1,fastq_2,barcodes
+test1,PhiX_S1_R1_001.fastq.gz,PhiX_S1_R2_001.fastq.gz,demult_barcodes.tsv
+```
+where barcodes.tsv looks like
+```
+> cat demult_barcodes.tsv 
+MIG2    TCAGTCCCGTTGG
+CAT8    GCCTGGGCGGCAG
+GLN3    ATTTGGGGGGGGT
+ARO80   TTGGTGGGGGTAG
+CBF1    CTCGGTCGTCAGT
+```
+and the config looks like
+
+```
+> cat local.config 
+singularity {
+
+  enabled = true
+  autoMounts = true
+  cacheDir = "${launchDir}/singularity_images/"
+  runOptions = "--bind ${launchDir}/tmp:/tmp"
+
+}
+
+process {
+
+  executor = "local"
+  scratch = true
+  scratch = "${launchDir}/tmp"
+
+  withLabel:process_medium {
+    cpus = { check_max( 6 * task.attempt, 'cpus' ) }
+    memory = { check_max( 25.GB * task.attempt, 'memory' ) }
+    time = { check_max( 8.h * task.attempt, 'time' ) }
+  }
+
+  withLabel:process_high {
+    cpus = { check_max( 12 * task.attempt, 'cpus' ) }
+    memory = { check_max( 25.GB * task.attempt, 'memory' ) }
+    time = { check_max( 8.h * task.attempt, 'time' ) }
+  }
+}
+
+params {
+
+    // Max resource options
+    // Defaults only, expecting to be overwritten
+    max_memory                 = '128.GB'
+    max_cpus                   = 24
+    max_time                   = '240.h'
+
+}
+
+// Function to ensure that resource requirements don't go beyond
+// a maximum limit
+def check_max(obj, type) {
+  if (type == 'memory') {
+    try {
+      if (obj.compareTo(params.max_memory as nextflow.util.MemoryUnit) == 1)
+        return params.max_memory as nextflow.util.MemoryUnit
+      else
+        return obj
+    } catch (all) {
+      println "   ### ERROR ###   Max memory '${params.max_memory}' is not valid! Using default value: $obj"
+      return obj
+    }
+  } else if (type == 'time') {
+    try {
+      if (obj.compareTo(params.max_time as nextflow.util.Duration) == 1)
+        return params.max_time as nextflow.util.Duration
+      else
+        return obj
+    } catch (all) {
+      println "   ### ERROR ###   Max time '${params.max_time}' is not valid! Using default value: $obj"
+      return obj
+    }
+  } else if (type == 'cpus') {
+    try {
+      return Math.min( obj, params.max_cpus as int )
+    } catch (all) {
+      println "   ### ERROR ###   Max cpus '${params.max_cpus}' is not valid! Using default value: $obj"
+      return obj
+    }
+  }
+}
+```
+
 ## Introduction
 
 <!-- TODO nf-core: Write a 1-2 sentence summary of what data the pipeline is for and what it does -->

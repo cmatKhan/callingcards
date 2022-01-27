@@ -11,7 +11,10 @@ WorkflowCallingcards.initialise(params, log)
 
 // TODO nf-core: Add all file path parameters for the pipeline to the list below
 // Check input path parameters to see if they exist
-def checkPathParamList = [ params.input, params.multiqc_config, params.fasta ]
+def checkPathParamList = [ params.input,
+                           params.multiqc_config,
+                           params.fasta ]
+
 for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
 // Check mandatory parameters
@@ -35,8 +38,9 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
-include { INPUT_CHECK } from '../subworkflows/local/input_check'
-include { FASTQC_UMITOOLS } from '../subworkflows/nf-co/fastqc_umitools'
+include { INPUT_CHECK      } from '../subworkflows/local/input_check'
+include { FASTQC_UMITOOLS  } from '../subworkflows/nf-core/fastqc_umitools'
+include { BWAMEM2_SAMTOOLS } from '../subworkflows/nf-core/bwamem2_samtools'
 
 /*
 ========================================================================================
@@ -77,36 +81,48 @@ workflow CALLINGCARDS {
     FASTQC_UMITOOLS (
         INPUT_CHECK.out.reads
     )
-    ch_versions = ch_versions.mix(SPLIT_TRIM.out.versions.first())
+    ch_versions = ch_versions.mix(FASTQC_UMITOOLS.out.versions.first())
 
-    // MODULE: Run bwa_mem
-    ALIGN (
-        FASTQC_UMITOOLS.out.reads
+    // MODULE: Align with bwamem2
+    ch_genome_bam                 = Channel.empty()
+    ch_genome_bam_index           = Channel.empty()
+    ch_samtools_stats             = Channel.empty()
+    ch_samtools_flagstat          = Channel.empty()
+    ch_samtools_idxstats          = Channel.empty()
+    ch_aligner_clustering_multiqc = Channel.empty()
+    BWAMEM2_SAMTOOLS (
+        FASTQC_UMITOOLS.out.reads,
+        params.fasta
     )
-    ch_versions = ch_versions.mix(ALIGN.out.versions.first())
+    ch_genome_bam        = BWAMEM2_SAMTOOLS.out.bam
+    ch_genome_bam_index  = BWAMEM2_SAMTOOLS.out.bai
+    ch_samtools_stats    = BWAMEM2_SAMTOOLS.out.stats
+    ch_samtools_flagstat = BWAMEM2_SAMTOOLS.out.flagstat
+    ch_samtools_idxstats = BWAMEM2_SAMTOOLS.out.idxstats
+    ch_versions = ch_versions.mix(BWAMEM2_SAMTOOLS.out.versions.first())
 
     //
     // MODULE: run BamQC
-    BAMQC (
-        ALIGN.out.bams // NOTE NEED TO SPLIT THIS ? HOW HANDLED IN RNASEQ?
-    )
-    ch_versions = ch_versions.mix(BAMQC.out.versions.first())
+    // BAMQC (
+    //    ALIGN.out.bams // NOTE NEED TO SPLIT THIS ? HOW HANDLED IN RNASEQ?
+    // )
+    //ch_versions = ch_versions.mix(BAMQC.out.versions.first())
 
     //
     // MODULE: Run Quantification
     // split bam ch into the number of barcodes?
-    QUANTIFY (
-        ALIGN.out.bams
-    )
-    ch_versions = ch_versions.mix(QUANTIFY.out.versions.first())
+    // QUANTIFY (
+    //    ALIGN.out.bams
+    //)
+    //ch_versions = ch_versions.mix(QUANTIFY.out.versions.first())
 
     //
     // MODULE: Run Quantification QC
     // TODO parallelize
-    QUANTIFY (
-        QUANTIFY.out.wig?
-    )
-    ch_versions = ch_versions.mix(QUANTIFY.out.versions.first())
+    //QUANTIFY (
+    //    QUANTIFY.out.wig?
+    //)
+    //ch_versions = ch_versions.mix(QUANTIFY.out.versions.first())
 
     //
     // collect software versions into file
@@ -126,7 +142,9 @@ workflow CALLINGCARDS {
     ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_custom_config.collect().ifEmpty([]))
     ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
     ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
-    ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
+    ch_multiqc_files = ch_multiqc_files.mix(ch_samtools_stats.collect{it[1]}.ifEmpty([]))
+    ch_multiqc_files = ch_multiqc_files.mix(ch_samtools_flagstat.collect{it[1]}.ifEmpty([]))
+    ch_multiqc_files = ch_multiqc_files.mix(ch_samtools_idxstats.collect{it[1]}.ifEmpty([]))
     // add BAMQC output here, also -- see RNAseq pipeline
 
 
