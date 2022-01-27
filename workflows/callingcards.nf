@@ -36,6 +36,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
 include { INPUT_CHECK } from '../subworkflows/local/input_check'
+include { FASTQC_UMITOOLS } from '../subworkflows/nf-co/fastqc_umitools'
 
 /*
 ========================================================================================
@@ -72,31 +73,20 @@ workflow CALLINGCARDS {
     ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
 
     //
-    // MODULE: Split reads by TF, trim off barcodes, etc
-    // TODO parallelize this step in code
-    SPLIT_TRIM (
+    // MODULESUBWORKFLOW: Use umi_tools to add barcodes to fastq id lines
+    FASTQC_UMITOOLS (
         INPUT_CHECK.out.reads
     )
     ch_versions = ch_versions.mix(SPLIT_TRIM.out.versions.first())
 
-    //
-    // MODULE: Run FastQC
-    //
-    FASTQC (
-        INPUT_CHECK.out.reads
-    )
-    ch_versions = ch_versions.mix(FASTQC.out.versions.first())
-
-    // MODULE: Run bowtie2
-    // TODO parallelize this step
+    // MODULE: Run bwa_mem
     ALIGN (
-        INPUT_CHECK.out.reads
+        FASTQC_UMITOOLS.out.reads
     )
     ch_versions = ch_versions.mix(ALIGN.out.versions.first())
 
     //
     // MODULE: run BamQC
-    // TODO parallelize this step
     BAMQC (
         ALIGN.out.bams // NOTE NEED TO SPLIT THIS ? HOW HANDLED IN RNASEQ?
     )
@@ -104,9 +94,17 @@ workflow CALLINGCARDS {
 
     //
     // MODULE: Run Quantification
+    // split bam ch into the number of barcodes?
+    QUANTIFY (
+        ALIGN.out.bams
+    )
+    ch_versions = ch_versions.mix(QUANTIFY.out.versions.first())
+
+    //
+    // MODULE: Run Quantification QC
     // TODO parallelize
     QUANTIFY (
-        ALIGN.out.bams // NOTE THAT THIS IS SPLIT FROM THE ALIGN STEP
+        QUANTIFY.out.wig?
     )
     ch_versions = ch_versions.mix(QUANTIFY.out.versions.first())
 
