@@ -29,7 +29,7 @@ workflow BWAMEM2_SAMTOOLS {
     ch_versions = ch_versions.mix(BWAMEM2_MEM.out.versions)
 
     //
-    // Sort, index BAM file and run samtools stats, flagstat and idxstats
+    // Add Read Group, Sort, index BAM file and run samtools stats, flagstat and idxstats
     //
     BAM_SORT_SAMTOOLS (  BWAMEM2_MEM.out.bam )
     ch_versions = ch_versions.mix(BAM_SORT_SAMTOOLS.out.versions)

@@ -15,6 +15,9 @@ workflow BAM_SORT_SAMTOOLS {
 
     ch_versions = Channel.empty()
 
+    ADD_READ_GROUP ( ch_bam )
+    ch_versions = ch_versions.mix(SAMTOOLS_SORT.out.versions.first())
+
     SAMTOOLS_SORT ( ch_bam )
     ch_versions = ch_versions.mix(SAMTOOLS_SORT.out.versions.first())
 
