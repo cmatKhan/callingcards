@@ -34,6 +34,12 @@ workflow BWAMEM2_SAMTOOLS {
     BAM_SORT_SAMTOOLS (  BWAMEM2_MEM.out.bam )
     ch_versions = ch_versions.mix(BAM_SORT_SAMTOOLS.out.versions)
 
+    ADD_READ_GROUP ( BAM_SORT_SAMTOOLS.out )
+    ch_versions = ch.versions.mix(ADD_READ_GROUP.out.versions)
+
+    BAM_SORT_SAMTOOLS ( ADD_READ_GROUP.out.bam )
+
+
     emit:
     bam            = BAM_SORT_SAMTOOLS.out.bam      // channel: [ val(meta), [ bam ] ]
     bai            = BAM_SORT_SAMTOOLS.out.bai      // channel: [ val(meta), [ bai ] ]
