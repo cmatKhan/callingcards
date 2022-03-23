@@ -41,6 +41,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 include { INPUT_CHECK      } from '../subworkflows/local/input_check'
 include { FASTQC_UMITOOLS  } from '../subworkflows/nf-core/fastqc_umitools'
 include { BWAMEM2_SAMTOOLS } from '../subworkflows/nf-core/bwamem2_samtools'
+include { PILEUP_BY_GROUP }         from '../subworkflows/nf-core/pileup_by_group'
 
 /*
 ========================================================================================
@@ -90,12 +91,13 @@ workflow CALLINGCARDS {
     ch_samtools_flagstat          = Channel.empty()
     ch_samtools_idxstats          = Channel.empty()
     ch_aligner_clustering_multiqc = Channel.empty()
+
     BWAMEM2_SAMTOOLS (
         FASTQC_UMITOOLS.out.reads,
         params.fasta
     )
+    // parse output into separate channels
     ch_genome_bam        = BWAMEM2_SAMTOOLS.out.bam
-    ch_genome_bam_index  = BWAMEM2_SAMTOOLS.out.bai
     ch_samtools_stats    = BWAMEM2_SAMTOOLS.out.stats
     ch_samtools_flagstat = BWAMEM2_SAMTOOLS.out.flagstat
     ch_samtools_idxstats = BWAMEM2_SAMTOOLS.out.idxstats
@@ -108,21 +110,12 @@ workflow CALLINGCARDS {
     // )
     //ch_versions = ch_versions.mix(BAMQC.out.versions.first())
 
-    //
-    // MODULE: Run Quantification
-    // split bam ch into the number of barcodes?
-    // QUANTIFY (
-    //    ALIGN.out.bams
-    //)
-    //ch_versions = ch_versions.mix(QUANTIFY.out.versions.first())
-
-    //
     // MODULE: Run Quantification QC
-    // TODO parallelize
-    //QUANTIFY (
-    //    QUANTIFY.out.wig?
-    //)
-    //ch_versions = ch_versions.mix(QUANTIFY.out.versions.first())
+    PILEUP_BY_GROUP (
+       ch_genome_bam,
+       params.fasta
+    )
+    ch_versions = ch_versions.mix(PILEUP_BY_GROUP.out.versions.first())
 
     //
     // collect software versions into file

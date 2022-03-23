@@ -39,7 +39,7 @@ test1,PhiX_S1_R1_001.fastq.gz,PhiX_S1_R2_001.fastq.gz,demult_barcodes.tsv
 ```
 where barcodes.tsv looks like
 ```
-> cat demult_barcodes.tsv 
+> cat demult_barcodes.tsv
 MIG2    TCAGTCCCGTTGG
 CAT8    GCCTGGGCGGCAG
 GLN3    ATTTGGGGGGGGT
@@ -49,7 +49,7 @@ CBF1    CTCGGTCGTCAGT
 and the config looks like
 
 ```
-> cat local.config 
+> cat local.config
 singularity {
 
   enabled = true
@@ -125,7 +125,7 @@ def check_max(obj, type) {
 ## Introduction
 
 <!-- TODO nf-core: Write a 1-2 sentence summary of what data the pipeline is for and what it does -->
-**nf-core/callingcards** is a bioinformatics best-practice analysis pipeline for A bioinformatics analysis pipeline for processing Transposon Calling Cards sequencing data.
+**nf-core/callingcards** is a bioinformatics analysis pipeline for processing Transposon Calling Cards sequencing data.
 
 The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. It uses Docker/Singularity containers making installation trivial and results highly reproducible. The [Nextflow DSL2](https://www.nextflow.io/docs/latest/dsl2.html) implementation of this pipeline uses one container per process which makes it much easier to maintain and update software dependencies. Where possible, these processes have been submitted to and installed from [nf-core/modules](https://github.com/nf-core/modules) in order to make them available to all nf-core pipelines, and to everyone within the Nextflow community!
 
@@ -136,8 +136,14 @@ On release, automated continuous integration tests run the pipeline on a full-si
 
 <!-- TODO nf-core: Fill in short bullet-pointed list of the default steps in the pipeline -->
 
-1. Read QC ([`FastQC`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
-2. Present QC for raw reads ([`MultiQC`](http://multiqc.info/))
+1. Check the sample sheet
+2. Append barcodes to the fastq ID line with UMI Tools ([`UMI Tools`](https://umi-tools.readthedocs.io/en/latest/))
+2. Read QC ([`FastQC`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
+3. Align ([`bwamem2 mem`](https://github.com/bwa-mem2/bwa-mem2https://umi-tools.readthedocs.io/en/latest/))
+4. Add the barcodes as read groups to the bam, index and sort. Implemented in ([a custom script](https://github.com/BrentLab/callingcards/blob/main/bin/add_read_group.py) using [pysam](https://pysam.readthedocs.io/en/latest/api.html).
+5. Bam QC ([`Qualimap`](http://qualimap.conesalab.org/))
+6.
+5. Present QC for raw reads ([`MultiQC`](http://multiqc.info/))
 
 ## Quick Start
 

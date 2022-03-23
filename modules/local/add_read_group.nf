@@ -1,5 +1,6 @@
 process ADD_READ_GROUP {
-    tag "$bam"
+
+    tag "$meta.id"
 
     conda (params.enable_conda ? "conda-forge::pysam=0.17.0" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -7,21 +8,29 @@ process ADD_READ_GROUP {
         'quay.io/biocontainers/pysam' }"
 
     input:
-    path bam
+    tuple val(meta), path(bam)
 
     output:
-    path '*.bam'       , emit: csv
-    path "versions.yml", emit: versions
+    tuple val(meta), path("*tagged.bam"),path("*tagged.bam.bai")  , emit: bam
+    path("*tagged.bam.bai")                                       , emit: bai
+    path  "versions.yml"                                          , emit: versions
 
-    script: // see nf-core/callingcards/bin/add_read_group_to_bam.py
+    script: // see nf-core-callingcards/bin/add_read_group_to_bam.py
     """
-    add_read_group_to_bam.py \\
+    add_read_group.py \\
         $bam \\
-        ${bam/%\.bam/_tagged.bam}
+        "test_tagged.bam" \\
+        $params.barcode_length \\
+        10
+
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         pysam: \$(pip freeze | grep pysam | sed 's/pysam==//g')
     END_VERSIONS
+
     """
 }
+
+// ${bam/%\.bam/_tagged.bam} \\
+        // $task.cpus

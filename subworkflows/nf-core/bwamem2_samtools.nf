@@ -4,7 +4,7 @@
 
 include { BWAMEM2_INDEX } from '../../modules/nf-core/modules/bwamem2/index/main'
 include { BWAMEM2_MEM } from '../../modules/nf-core/modules/bwamem2/mem/main'
-include { BAM_SORT_SAMTOOLS } from '../nf-core/bam_sort_samtools'
+include { BAM_INDEX_SORT_RG } from './bam_index_sort_rg'
 
 workflow BWAMEM2_SAMTOOLS {
     take:
@@ -24,28 +24,21 @@ workflow BWAMEM2_SAMTOOLS {
     //
     // Map reads with bwamem2 mem
     //
-    sort_bam = false   // do this in the next im bam_sort_samtools
+    sort_bam = false   // sort later
     BWAMEM2_MEM ( reads, BWAMEM2_INDEX.out.index, sort_bam )
     ch_versions = ch_versions.mix(BWAMEM2_MEM.out.versions)
 
     //
     // Add Read Group, Sort, index BAM file and run samtools stats, flagstat and idxstats
     //
-    BAM_SORT_SAMTOOLS (  BWAMEM2_MEM.out.bam )
-    ch_versions = ch_versions.mix(BAM_SORT_SAMTOOLS.out.versions)
-
-    ADD_READ_GROUP ( BAM_SORT_SAMTOOLS.out )
-    ch_versions = ch.versions.mix(ADD_READ_GROUP.out.versions)
-
-    BAM_SORT_SAMTOOLS ( ADD_READ_GROUP.out.bam )
-
+    BAM_INDEX_SORT_RG (  BWAMEM2_MEM.out.bam )
+    ch_versions = ch_versions.mix(BAM_INDEX_SORT_RG.out.versions)
 
     emit:
-    bam            = BAM_SORT_SAMTOOLS.out.bam      // channel: [ val(meta), [ bam ] ]
-    bai            = BAM_SORT_SAMTOOLS.out.bai      // channel: [ val(meta), [ bai ] ]
-    stats          = BAM_SORT_SAMTOOLS.out.stats    // channel: [ val(meta), [ stats ] ]
-    flagstat       = BAM_SORT_SAMTOOLS.out.flagstat // channel: [ val(meta), [ flagstat ] ]
-    idxstats       = BAM_SORT_SAMTOOLS.out.idxstats // channel: [ val(meta), [ idxstats ] ]
+    bam            = BAM_INDEX_SORT_RG.out.bam      // channel: [ val(meta), [ bam ] ]
+    stats          = BAM_INDEX_SORT_RG.out.stats    // channel: [ val(meta), [ stats ] ]
+    flagstat       = BAM_INDEX_SORT_RG.out.flagstat // channel: [ val(meta), [ flagstat ] ]
+    idxstats       = BAM_INDEX_SORT_RG.out.idxstats // channel: [ val(meta), [ idxstats ] ]
 
     versions       = ch_versions                    // channel: [ versions.yml ]
 }
