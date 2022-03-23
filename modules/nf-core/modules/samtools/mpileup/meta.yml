@@ -1,7 +1,7 @@
-name: samtools_index
-description: Index SAM/BAM/CRAM file
+name: samtools_mpileup
+description:  BAM
 keywords:
-    - index
+    - mpileup
     - bam
     - sam
     - cram
@@ -25,29 +25,24 @@ input:
         type: file
         description: BAM/CRAM/SAM file
         pattern: "*.{bam,cram,sam}"
+    - fasta:
+        type: file
+        description: FASTA reference file
+        pattern: "*.{fasta,fa}"
 output:
     - meta:
         type: map
         description: |
             Groovy Map containing sample information
             e.g. [ id:'test', single_end:false ]
-    - bai:
+    - mpileup:
         type: file
-        description: BAM/CRAM/SAM index file
-        pattern: "*.{bai,crai,sai}"
-    - crai:
-        type: file
-        description: BAM/CRAM/SAM index file
-        pattern: "*.{bai,crai,sai}"
-    - csi:
-        type: file
-        description: CSI index file
-        pattern: "*.{csi}"
+        description: mpileup file
+        pattern: "*.{mpileup}"
     - versions:
         type: file
         description: File containing software versions
         pattern: "versions.yml"
 authors:
     - "@drpatelh"
-    - "@ewels"
-    - "@maxulysse"
+    - "@joseespinosa"

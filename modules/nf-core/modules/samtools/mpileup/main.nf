@@ -1,4 +1,4 @@
-process SAMTOOLS_SORT {
+process SAMTOOLS_MPILEUP {
     tag "$meta.id"
     label 'process_medium'
 
@@ -9,18 +9,24 @@ process SAMTOOLS_SORT {
 
     input:
     tuple val(meta), path(bam)
+    path  fasta
 
     output:
-    tuple val(meta), path("*.bam"), emit: bam
-    path  "versions.yml"          , emit: versions
+    tuple val(meta), path("*.mpileup"), emit: mpileup
+    path  "versions.yml"              , emit: versions
+
+    when:
+    task.ext.when == null || task.ext.when
 
     script:
     def args = task.ext.args ?: ''
-    //def prefix = task.ext.prefix ?: "${meta.id}"
-    prefix = "sorted_" // TODO remove this when the ext.prefix is working
-    if ("$bam" == "${prefix}.bam") error "Input and output names are the same, use \"task.ext.prefix\" to disambiguate!"
+    def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    samtools sort $args -@ $task.cpus -o ${prefix}.bam -T $prefix $bam
+    samtools mpileup \\
+        --fasta-ref $fasta \\
+        --output ${prefix}.mpileup \\
+        $args \\
+        $bam
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         samtools: \$(echo \$(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*\$//')
