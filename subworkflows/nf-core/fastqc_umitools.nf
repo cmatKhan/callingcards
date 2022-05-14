@@ -3,6 +3,9 @@
 // NOTE: copied from nf-co/rnaseq/subworkflows/nf-core/fastqc_umitools_trimgalore.nf
 //
 
+// TODO this is the longest process -- split into n groups and do in parallel
+// use this as template https://www.nextflow.io/example3.html
+
 include { FASTQC           } from '../../modules/nf-core/modules/fastqc/main'
 include { UMITOOLS_EXTRACT } from '../../modules/nf-core/modules/umitools/extract/main'
 

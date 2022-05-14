@@ -41,7 +41,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 include { INPUT_CHECK      } from '../subworkflows/local/input_check'
 include { FASTQC_UMITOOLS  } from '../subworkflows/nf-core/fastqc_umitools'
 include { BWAMEM2_SAMTOOLS } from '../subworkflows/nf-core/bwamem2_samtools'
-include { PILEUP_BY_GROUP }         from '../subworkflows/nf-core/pileup_by_group'
+include { PILEUP }         from '../subworkflows/nf-core/pileup'
 
 /*
 ========================================================================================
@@ -98,6 +98,7 @@ workflow CALLINGCARDS {
     )
     // parse output into separate channels
     ch_genome_bam        = BWAMEM2_SAMTOOLS.out.bam
+    ch_genome_bam_index  = BWAMEM2_SAMTOOLS.out.bai
     ch_samtools_stats    = BWAMEM2_SAMTOOLS.out.stats
     ch_samtools_flagstat = BWAMEM2_SAMTOOLS.out.flagstat
     ch_samtools_idxstats = BWAMEM2_SAMTOOLS.out.idxstats
@@ -111,11 +112,11 @@ workflow CALLINGCARDS {
     //ch_versions = ch_versions.mix(BAMQC.out.versions.first())
 
     // MODULE: Run Quantification QC
-    PILEUP_BY_GROUP (
+    PILEUP (
        ch_genome_bam,
        params.fasta
     )
-    ch_versions = ch_versions.mix(PILEUP_BY_GROUP.out.versions.first())
+    ch_versions = ch_versions.mix(PILEUP.out.versions.first())
 
     //
     // collect software versions into file
@@ -135,6 +136,7 @@ workflow CALLINGCARDS {
     ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_custom_config.collect().ifEmpty([]))
     ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
     ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
+    ch_multiqc_files = ch_multiqc_files.mix(FASTQC_UMITOOLS.out.fastqc_zip.collect{it[1]}.ifEmpty([]))
     ch_multiqc_files = ch_multiqc_files.mix(ch_samtools_stats.collect{it[1]}.ifEmpty([]))
     ch_multiqc_files = ch_multiqc_files.mix(ch_samtools_flagstat.collect{it[1]}.ifEmpty([]))
     ch_multiqc_files = ch_multiqc_files.mix(ch_samtools_idxstats.collect{it[1]}.ifEmpty([]))
