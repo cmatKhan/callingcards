@@ -16,7 +16,80 @@
 
 ## DEVELOPMENT NOTES
 
-Currently, running through alignment. command looks like:
+### TL;DR
+
+If you'd like to try this out on your own, you may copy this directory into
+your own working directory:
+
+```
+/lts/mblab/personal/chasem/cc_tester
+```
+
+You might do this with `rsync` on the cluster like so:
+
+```
+rsync -aHv /lts/mblab/personal/chasem/cc_tester /scratch/<your_lab>/<your_scratch>/
+```
+
+Or you might pull this onto your local computer. As long as you have installed
+Singularity and Nextflow (both easy -- search for the respective documentation
+and follow the instructions. Don't bother with any 'how to' sites, just go do the docs).
+
+On the new cluster, if you haven't already installed singularity and nextflow, do this:
+
+```
+$ interactive
+$ spack install singularityce
+$ spack install nextflow
+```
+Note that singularity is `singularityce`. At this point, you should be able
+to follow the HTCF documentation to run this pipeline. If not, then the HTCF
+documentation is lacking -- let me know, I'll help, and then we'll e-mail the
+sys admins together with suggestions for better documentation.
+
+To pull onto your local computer, do this:
+
+```
+scp -r <your_username>@login.htcf.wustl.edu:/lts/mblab/personal/cc_tester /path/on/your/computer/
+```
+
+It only takes 36 minutes or so to run this on a local.
+
+Regardless of where you put the data, once it is there, `cd` into the directory
+and in one way or another (you could do this with an sbatch script, for exmaple)
+do this:
+
+```
+nextflow run nf-core-callingcards/main.nf -c local.config -params-file params.json -resume
+```
+
+The output will be in your `$PWD`, and will look like this:
+
+```
+> ls results
+bwamem2  create  fastqc  multiqc  pipeline_info  promoter  samtools  umitools
+
+```
+The promoter enrichment is in `promoter`. The pileup database is in `create`.
+The alignment file (bam) and raw pileup is in `samtools`. Fixing this output so
+that things end up in mroe logical places is a near term `TODO`.
+### A longer explanation
+
+All basic steps of the pipeline currently run:
+
+The barcodes are first extracted, and the reads trimmed, by UMItools. The reads
+are sent through fastQC and then aligned. The alignment is indexed, sorted
+and then transformed into a pileup. The pileup is processed into a sqlite database,
+and that is used to extract reads over pre-defined promoter regions and to calculate
+enrichment. The nice thing about parsing the pileup into a sqlite database is that
+it is quick and easy to re-calculate enrichment with a different promoter definition.
+see [calling cards tools](https://github.com/cmatKhan/callingCardsTools)
+
+This will process any number of calling cards experiments simultaneously (or as
+simultaneously as the cluster scheduler will allow). Also, a single calling cards
+experiment can be processed on a local computer in about a half an hour.
+
+The command to submit the job looks like this:
 
 ```
 nextflow run nf-core-callingcards/main.nf -c local.config -params-file params.json -resume
@@ -33,11 +106,18 @@ params file looks like
 }
 ```
 input file looks like
+
+__NOTE__: There is a caveat here. Currently, the path to the tf barcode map
+must be the absolute path.
 ```
 sample,fastq_1,fastq_2,barcodes
 test1,PhiX_S1_R1_001.fastq.gz,PhiX_S1_R2_001.fastq.gz,demult_barcodes.tsv
 ```
 where barcodes.tsv looks like
+
+__MAKE SURE__ the tsv is actually a tsv. It is a good idea to read it into
+R/python and parse it with read_tsv to make sure it comes out in two rows.
+Checking this at input is a TODO that I haven't yet incorporated.
 ```
 > cat demult_barcodes.tsv
 MIG2    TCAGTCCCGTTGG

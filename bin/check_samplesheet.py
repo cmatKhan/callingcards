@@ -5,6 +5,8 @@ modified by: chase mateusiak 20220126
 Check sample sheet input for accuracy. Only slightly modified from the nf-co template
 """
 
+# TODO check that the barcode file is actually a tsv/csv (whatever i decide it should be)
+
 import os
 import sys
 import errno

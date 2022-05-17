@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
 
 library(callingCardsTools)
+library(optparse)
 
 main = function(args){
 

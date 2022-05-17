@@ -41,7 +41,8 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 include { INPUT_CHECK      } from '../subworkflows/local/input_check'
 include { FASTQC_UMITOOLS  } from '../subworkflows/nf-core/fastqc_umitools'
 include { BWAMEM2_SAMTOOLS } from '../subworkflows/nf-core/bwamem2_samtools'
-include { PILEUP }         from '../subworkflows/nf-core/pileup'
+include { PILEUP           } from '../subworkflows/nf-core/pileup'
+include { PARSE_PILEUP     } from '../subworkflows/local/parse_pileup'
 
 /*
 ========================================================================================
@@ -117,6 +118,17 @@ workflow CALLINGCARDS {
        params.fasta
     )
     ch_versions = ch_versions.mix(PILEUP.out.versions.first())
+
+    // Module: Parse the pileup into a sqlite db and calculate enrichment
+    //         over the promoters
+    PARSE_PILEUP (
+       PILEUP.out.mpileup,
+       params.barcode_length,
+       params.promoter_bed,
+       params.background_data,
+       params.pileup_stranded
+    )
+    ch_versions = ch_versions.mix(PARSE_PILEUP.out.versions.first())
 
     //
     // collect software versions into file

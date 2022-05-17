@@ -1,4 +1,4 @@
-process CREATE_PILEUP_DB {
+process PROMOTER_ENRICHMENT {
 
     tag "$meta.id"
     label 'process_medium'
@@ -6,13 +6,13 @@ process CREATE_PILEUP_DB {
     container "library://cmatkhan/default/calling_cards_tools:sha256.6987abea67e7fcef44443fff964de003be559f56c839ebf43c2d4160a92b675a"
 
     input:
-    tuple val(meta), path(pileup)
-    val   barcode_length
-    path  background_data
+    tuple val(meta), path(pileup_db)
+    path  promoter_bed
+    val   stranded
 
     output:
-    tuple val(meta), path("*.sqlite"), emit: pileup_db
-    path  "versions.yml"             , emit: versions
+    tuple val(meta), path("*.csv"), emit: enrichment
+    path "versions.yml"           , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -21,10 +21,12 @@ process CREATE_PILEUP_DB {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    create_pileup_db.R -p ${pileup} \\
-                       -b ${barcode_length} \\
-                       -o ${prefix} \\
-                       -d ${background_data}
+    promoter_enrichment.R \\
+        -p ${pileup_db} \\
+        -b ${promoter_bed} \\
+        -m ${meta.barcodes} \\
+        -s ${stranded} \\
+        -o ${prefix}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
