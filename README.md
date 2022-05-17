@@ -55,13 +55,19 @@ scp -r <your_username>@login.htcf.wustl.edu:/lts/mblab/personal/cc_tester /path/
 
 It only takes 36 minutes or so to run this on a local.
 
-Regardless of where you put the data, once it is there, `cd` into the directory
-and in one way or another (you could do this with an sbatch script, for exmaple)
-do this:
+Regardless of where you put the data, once it is there, `cd` into the directory.
+
+__CRITICAL__ Before doing anything else, open the params.json file and change
+the paths so that they accurately point to the files on your computer (it is a
+near term to do to make this such that you could use relative paths, but for
+now, you need absolute).
+
+To launch the pipeline, now do this:
 
 ```
 nextflow run nf-core-callingcards/main.nf -c local.config -params-file params.json -resume
 ```
+Note that you may do this via an sbatch script.
 
 The output will be in your `$PWD`, and will look like this:
 
@@ -102,8 +108,15 @@ params file looks like
   "input":"input_samplesheet.csv",
   "fasta":"\/home\/oguzkhan\/ref\/S288C_R64\/GCF_000146045.2_R64_genomic.fa",
   "r1_bc_pattern":"NNNNNXXXXXXXXXXXXXXXXX",
-  "r2_bc_pattern":"NNNNNNNNXXXX"
+  "r2_bc_pattern":"NNNNNNNNXXXX",
+  "barcode_length": 21,
+  "samtools_mpileup_adjust_mq": 50,
+  "min_mapq": 10,
+  "promoter_bed": "\/home\/oguzkhan\/Desktop\/tmp\/cc_tester\/promoter_test.bed",
+  "background_data": "\/home\/oguzkhan\/Desktop\/tmp\/cc_tester\/NOTF_Minus_Adh1_2015_17_combined_chase_edit.csv",
+  "pileup_stranded": "FALSE"
 }
+
 ```
 input file looks like
 
