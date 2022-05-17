@@ -60,7 +60,7 @@ Regardless of where you put the data, once it is there, `cd` into the directory.
 __CRITICAL__ Before doing anything else, open the params.json file and change
 the paths so that they accurately point to the files on your computer (it is a
 near term to do to make this such that you could use relative paths, but for
-now, you need absolute).
+now, you need absolute). __Do the same thing__ to the input_samplesheet.csv file.
 
 To launch the pipeline, now do this:
 
