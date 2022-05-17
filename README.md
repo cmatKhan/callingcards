@@ -65,7 +65,7 @@ now, you need absolute). __Do the same thing__ to the input_samplesheet.csv file
 To launch the pipeline, now do this:
 
 ```
-nextflow run nf-core-callingcards/main.nf -c local.config -params-file params.json -resume
+nextflow run callingcards/main.nf -c local.config -params-file params.json -resume
 ```
 Note that you may do this via an sbatch script.
 
