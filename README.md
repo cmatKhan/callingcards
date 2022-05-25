@@ -109,7 +109,7 @@ params file looks like
   "fasta":"\/home\/oguzkhan\/ref\/S288C_R64\/GCF_000146045.2_R64_genomic.fa",
   "r1_bc_pattern":"NNNNNXXXXXXXXXXXXXXXXX",
   "r2_bc_pattern":"NNNNNNNNXXXX",
-  "barcode_length": 21,
+  "barcode_length": 13,
   "samtools_mpileup_adjust_mq": 50,
   "min_mapq": 10,
   "promoter_bed": "\/home\/oguzkhan\/Desktop\/tmp\/cc_tester\/promoter_test.bed",
