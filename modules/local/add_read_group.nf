@@ -1,6 +1,7 @@
 process ADD_READ_GROUP {
 
     tag "$meta.id"
+    label "process_high_cpu_low_mem"
 
     conda (params.enable_conda ? "conda-forge::pysam=0.17.0" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -9,19 +10,23 @@ process ADD_READ_GROUP {
 
     input:
     tuple val(meta), path(bam)
+    genome   // fasta file
+    genome_index
+    val barcode_length // numeric value, eg 13
 
     output:
-    tuple val(meta), path("*tagged.bam"),path("*tagged.bam.bai")  , emit: bam
-    path("*tagged.bam.bai")                                       , emit: bai
+    tuple val(meta), path("*tagged.bam"),path("*tagged.bam.bai")  , emit: bam_index
     path  "versions.yml"                                          , emit: versions
 
     script: // see nf-core-callingcards/bin/add_read_group_to_bam.py
     """
-    add_read_group.py \\
+    add_read_group_and_tags.py \\
         $bam \\
-        "test_tagged.bam" \\
-        $params.barcode_length \\
-        10
+        $genome \\
+        $genome_index \\
+        "${meta}_tagged.bam" \\
+        $barcode_length \\
+        $task.cpus
 
 
     cat <<-END_VERSIONS > versions.yml

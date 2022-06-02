@@ -79,41 +79,56 @@ workflow CALLINGCARDS {
     ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
 
     //
+    // SUBWORKFLOW: use samtools to create a .fai index for the genome
+    //              TODO: provide param to skip this if provided
+    //
+    SAMTOOLS_INDEX_GENOME (
+        params.fasta
+    )
+    ch_versions = ch_versions.mix(PROCESS_SEQUENCE_FILES.out.versions.first())
+    //
     // SUBWORKFLOW: run sequencer level QC, extract barcodes and trim
     //
     PROCESS_SEQUENCE_FILES (
         input_check.out.reads
     )
+    ch_versions = ch_versions.mix(PROCESS_SEQUENCE_FILES.out.versions.first())
 
     //
     // SUBWORKFLOW: align reads
+    // input:
+    // output:
     //
     ALIGN (
         PROCESS_SEQUENCE_FILES.out.reads,
         params.fasta
     )
+    ch_versions = ch_versions.mix(ALIGN.out.versions.first())
 
-    // parse output into separate channels
-    ch_genome_bam        = PROCESS_ALIGNMENTS.out.bam
-    ch_genome_bam_index  = PROCESS_ALIGNMENTS.out.bai
+    //
+    // SUBWORKFLOW: sort, add barcodes as read group, add tags, index and
+    //              extract basic alignment stats
+    //
+    ch_bam_index         = Channel.empty()
+    ch_samtools_stats    = Channel.empty()
+    ch_samtools_flatstat = Channel.empty()
+    ch_samtools_idxstats = Channel.empty()
+
+    PROCESS_ALIGNMENTS (
+        ALIGN.out.bam,
+        SAMTOOLS_INDEX_GENOME.out.fai
+    )
+    ch_bam_index         = PROCESS_ALIGNMENTS.out.bam_index
     ch_samtools_stats    = PROCESS_ALIGNMENTS.out.stats
     ch_samtools_flagstat = PROCESS_ALIGNMENTS.out.flagstat
     ch_samtools_idxstats = PROCESS_ALIGNMENTS.out.idxstats
     ch_versions = ch_versions.mix(PROCESS_ALIGNMENTS.out.versions.first())
 
     //
-    // SUBWORKFLOW: sort, add barcodes as read group, add tags, index and
-    //              extract basic alignment stats
-    //
-    PROCESS_ALIGNMENTS (
-
-    )
-
-    //
     // SUBWORKFLOW: turn alignments into ccf (modified bed format) which
     //              may be used to quantify hops per TF per promoter region
     QUANTIFY_HOPS (
-
+        ch_bam_index
     )
 
     //

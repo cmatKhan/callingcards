@@ -4,11 +4,14 @@
 // COPIED FROM nf-co/rnaseq
 //
 
-include { SORT_INDEX_STATS      } from './nf-core/samtools_sort_index_stats'
+include { SORT_INDEX_STATS } from './nf-core/samtools_sort_index_stats'
+include { ADD_RG_AND_TAGS }  from '../../modules/local/add_read_group'
 
 workflow SAMTOOLS_SORT_INDEX_STATS {
     take:
-    ch_bam // channel: [ val(meta), [ bam ] ]
+    bam // channel: [ val(meta), [ bam ] ]
+    genome // path(genome) path to the fasta file
+    fai // path(fasta index) path to the index of the genome fasta file
 
     main:
 
@@ -20,8 +23,9 @@ workflow SAMTOOLS_SORT_INDEX_STATS {
     ch_versions = ch_versions.mix(SORT_INDEX_STATS.out.versions)
 
     ADD_RG_AND_TAGS (
-        SORT_INDEX_STATS.out.bam_index
-        // other stuff
+        SORT_INDEX_STATS.out.bam_index,
+        genome,
+        fai
     )
     ch_version = ch_versions.mix(ADD_RG_TAGS.out.versions)
 

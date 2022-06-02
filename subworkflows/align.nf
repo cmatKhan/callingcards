@@ -4,24 +4,31 @@
 // in the include ... from ... path below
 //
 
-include { ALIGNER } from '.nf-core/modules/bwamem2/index/main'
+include { BWAMEM2_INDEX_MEM } from './nf-core/bwamem2'
 
 workflow ALIGN {
     take:
     reads            // channel: [ val(meta), [ reads ] ]
-    genome          // channel: file(ref_genome)
+    genome           // channel: file(ref_genome)
 
     main:
 
     ch_versions = Channel.empty()
+    ch_bam      = Channel.empty()
 
-    ALIGNER (
-        reads,
-        genome
-    )
-    ch_versions = ch_versions.mix(ALIGNER.out.versions)
+    if(params.aligner == 'bwamem2') {
+        BWAMEM2_INDEX_MEM (
+            reads,
+            genome
+        )
+        ch_bam      = ch_bam.mix(BWAMEM2_INDEX_MEM.out.bam)
+        ch_versions = ch_versions.mix(BWAMEM2_INDEX_MEM.out.versions)
+    } else {
+        exit 1, "No aligner specified in params OR aligner: ${params.aligner} is not recognized. "
+    }
+
 
     emit:
-    bam       = ALIGNER.out.bam  // channel: [ val(meta), [ bam ] ]
+    bam       = ch_bam           // channel: [ val(meta), [ bam ] ]
     versions  = ch_versions      // channel: [ versions.yml ]
 }

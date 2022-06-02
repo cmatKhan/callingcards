@@ -21,6 +21,9 @@
             "qualimap/bamqc": {
                 "git_sha": "d473a247d2e0c619b0df877ea19d9a5a98c8e3c8"
             },
+            "samtools/faidx": {
+                "git_sha": "897c33d5da084b61109500ee44c01da2d3e4e773"
+            },
             "samtools/flagstat": {
                 "git_sha": "e751e5040af57e1b4e06ed4e0f3efe6de25c1683"
             },
