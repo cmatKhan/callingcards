@@ -164,8 +164,6 @@ def add_read_group_and_tags(bampath_in, bampath_out, genome_path,
                               region_dict['start'],
                               region_dict['end']).upper()
 
-        # Extract barcode ------------------------------------------------------
-
         # Set tags -------------------------------------------------------------
         # the list comprehension outputs [None, None, None, ...]. Out catches
         # this so it isn't printed to std out
@@ -174,7 +172,8 @@ def add_read_group_and_tags(bampath_in, bampath_out, genome_path,
         # Write to file --------------------------------------------------------
         tagged_bam.write(read)
 
-    # close the input and output bam files
+    # Close files --------------------------------------------------------------
+    genome.close()
     tagged_bam.close()
     input_bamfile.close()
 
@@ -199,12 +198,12 @@ def main(args=None):
                       does not exists: {}".format(input_path))
 
     add_read_group_and_tags(args.bampath_in,
-                   args.bampath_out,
-                   args.genome_path,
-                   args.genome_index_path,
-                   int(args.id_length),
-                   int(args.insertion_length),
-                   args.nthreads)
+                            args.bampath_out,
+                            args.genome_path,
+                            args.genome_index_path,
+                            int(args.id_length),
+                            int(args.insertion_length),
+                            args.nthreads)
 
 
 if __name__ == "__main__":
