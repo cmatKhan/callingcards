@@ -118,6 +118,11 @@ def add_read_group_and_tags(bampath_in, bampath_out, genome_path,
     for read in input_bamfile.fetch():
 
         # Extract the length of any soft clipping ------------------------------
+
+        # TODO: THIS IS WRONG -- NEEDS TO BE IN CONDITIONAL STATEMENT BELOW B/C
+        # SOFT CLIPPING COULD HAPPEN AT BEGINNING OR END. THE ONE OF INTEREST
+        # DEPENDS ON THE ALIGNMENT STRAND.
+
         # A cigartuple looks like [(0,4), (2,2), (1,6),..,(4,68)] if read
         # is reverse complement. If it is forward, it would have the (4,68),
         # in this case, in the first position.
