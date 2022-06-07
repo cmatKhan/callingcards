@@ -210,6 +210,8 @@ def main(args=None):
                             int(args.insertion_length),
                             args.nthreads)
 
+    sys.exit(0)
+
 
 if __name__ == "__main__":
     sys.exit(main())
