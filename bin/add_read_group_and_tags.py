@@ -119,10 +119,6 @@ def add_read_group_and_tags(bampath_in, bampath_out, genome_path,
 
         # Extract the length of any soft clipping ------------------------------
 
-        # TODO: THIS IS WRONG -- NEEDS TO BE IN CONDITIONAL STATEMENT BELOW B/C
-        # SOFT CLIPPING COULD HAPPEN AT BEGINNING OR END. THE ONE OF INTEREST
-        # DEPENDS ON THE ALIGNMENT STRAND.
-
         # A cigartuple looks like [(0,4), (2,2), (1,6),..,(4,68)] if read
         # is reverse complement. If it is forward, it would have the (4,68),
         # in this case, in the first position.
@@ -140,6 +136,19 @@ def add_read_group_and_tags(bampath_in, bampath_out, genome_path,
         # if the result is not zero, then the read is reverse complement.
         region_dict = dict()
         if read.flag & 0x10:
+
+            # A cigartuple looks like [(0,4), (2,2), (1,6),..,(4,68)] if read
+            # is reverse complement. If it is forward, it would have the (4,68),
+            # in this case, in the first position.
+            # The first entry in the tuple is the cigar operation and the
+            # second is the length. Note that pysam does order the tuples in the
+            # reverse order from the sam cigar specs, so cigar 30M would be
+            # (0,30). 4 is cigar S or BAM_CSOFT_CLIP. The list operation below
+            # extracts the length of cigar operation 4 and returns a integer.
+            # if 4 DNE, then soft_clip_length is 0.
+            soft_clip_length = read.cigartuples[-1][1] \
+                if read.cigartuples[-1][0] == 4 \
+                else 0
             # The insertion point is at the end of the alignment
             insert = read.reference_end
             # adjust insert for soft clipping
@@ -150,7 +159,11 @@ def add_read_group_and_tags(bampath_in, bampath_out, genome_path,
             region_dict['end']   = insert + (insertion_length)
         # else, Read is in the forward orientation
         else:
-            #
+            # see if clause for explanation.
+            soft_clip_length = read.cigartuples[0][1] \
+                if read.cigartuples[0][0] == 4 \
+                else 0
+            # extract insert position
             insert = read.reference_start
             # adjust insert for soft clipping
             insert = insert - soft_clip_length
