@@ -117,26 +117,11 @@ def add_read_group_and_tags(bampath_in, bampath_out, genome_path,
     tagged_bam = pysam.AlignmentFile(bampath_out, "wb", header = new_header)
     for read in input_bamfile.fetch():
 
-        # Extract the length of any soft clipping ------------------------------
-
-        # A cigartuple looks like [(0,4), (2,2), (1,6),..,(4,68)] if read
-        # is reverse complement. If it is forward, it would have the (4,68),
-        # in this case, in the first position.
-        # The first entry in the tuple is the cigar operation and the
-        # second is the length. Note that pysam does order the tuples in the
-        # reverse order from the sam cigar specs, so cigar 30M would be
-        # (0,30). 4 is cigar S or BAM_CSOFT_CLIP. The list operation below
-        # extracts the length of cigar operation 4 and returns a integer.
-        # if 4 DNE, then soft_clip_length is 0.
-        soft_clip_length = sum([length for cigar_operation, length in
-                                read.cigartuples if cigar_operation == 4 ])
-
         # Extract XI and XZ tags -----------------------------------------------
         # the flag is cast to an int and then a bitwise operation is performed
         # if the result is not zero, then the read is reverse complement.
         region_dict = dict()
         if read.flag & 0x10:
-
             # A cigartuple looks like [(0,4), (2,2), (1,6),..,(4,68)] if read
             # is reverse complement. If it is forward, it would have the (4,68),
             # in this case, in the first position.
@@ -159,7 +144,10 @@ def add_read_group_and_tags(bampath_in, bampath_out, genome_path,
             region_dict['end']   = insert + (insertion_length)
         # else, Read is in the forward orientation
         else:
-            # see if clause for explanation.
+            # see if clause for lengthy explanation. This examines the first
+            # operation in the cigar string. If it is a soft clip (code 4),
+            # the length of the soft clipping is stored. Else there is 0 soft
+            # clipping
             soft_clip_length = read.cigartuples[0][1] \
                 if read.cigartuples[0][0] == 4 \
                 else 0
