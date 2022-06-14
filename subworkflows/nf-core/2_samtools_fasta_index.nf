@@ -15,7 +15,7 @@ workflow SAMTOOLS_INDEX_GENOME {
     //
     // index the genome with bwamem2 index
     //
-    ch_genome = Channel.of( ['', fasta]
+    ch_genome = Channel.of( ['', fasta])
     SAMTOOLS_FAIDX ( ch_genome )
     ch_versions = ch_versions.mix(SAMTOOLS_FAIDX.out.versions)
 

@@ -1,4 +1,4 @@
-process ADD_READ_GROUP {
+process ADD_RG_AND_TAGS {
 
     tag "$meta.id"
     label "process_high_cpu_low_mem"
@@ -10,8 +10,8 @@ process ADD_READ_GROUP {
 
     input:
     tuple val(meta), path(bam)
-    genome   // fasta file
-    genome_index
+    path genome   // fasta file
+    path genome_index
     val barcode_length // numeric value, eg 13
 
     output:

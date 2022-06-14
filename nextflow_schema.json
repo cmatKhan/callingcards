@@ -12,9 +12,14 @@
             "description": "Define where the pipeline should find input data and save output data.",
             "required": [
                 "input",
+                "aligner",
                 "barcode_length",
                 "r1_bc_pattern",
-                "r2_bc_pattern"
+                "samtools_mpileup_adjust_mq",
+                "min_mapq",
+                "promoter_bed",
+                "background_data",
+                "pileup_stranded"
             ],
             "properties": {
                 "input": {
@@ -27,10 +32,15 @@
                     "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row. See [usage docs](https://nf-co.re/callingcards/usage#samplesheet-input).",
                     "fa_icon": "fas fa-file-csv"
                 },
+                "aligner": {
+                    "type": "string",
+                    "description": "Choose one of {'bwamem2', } to align the reads",
+                    "default": "bwamem2"
+                },
                 "barcode_length": {
                     "type": "integer",
                     "description": "the combined length of the barcodes in R1 and R2",
-                    "default": 21
+                    "default": 13
                 },
                 "r1_bc_pattern": {
                     "type": "string",
@@ -41,6 +51,30 @@
                     "type": "string",
                     "default": "NNNNNXXXXXXXXXXXXXXXXX",
                     "description": "UMI tools style barcode pattern for R2. See UMI tools docs for details"
+                },
+                "samtools_mpileup_adjust_mq": {
+                    "type": "integer",
+                    "default": 50,
+                    "description": "Coefficient for downgrading mapping quality for reads containing excessive mismatches. Samtools recommends 50 for BWA. See Samtools mpileup docs"
+                },
+                "min_mapq": {
+                    "type": "integer",
+                    "description": "Minimum mapping quality for an alignment to be used in pileup. See Samtools mpileup docs",
+                    "default": 10
+                },
+                "promoter_bed": {
+                    "type": "string",
+                    "description": "path to the bed file which defines promoter regions",
+                    "fa_icon": "fas fa-file"
+                },
+                "background_data": {
+                    "type": "string",
+                    "description": "background hop data against which to calculate significance",
+                    "fa_icon": "fas fa-file-csv"
+                },
+                "pileup_stranded": {
+                    "type": "string",
+                    "description": "Boolean -- whether to consider strand of reads in pileup. Default is FALSE"
                 },
                 "outdir": {
                     "type": "string",
@@ -82,6 +116,10 @@
                     "description": "Path to FASTA genome file.",
                     "help_text": "This parameter is *mandatory* if `--genome` is not specified. If you don't have a BWA index available this will be generated for you automatically. Combine with `--save_reference` to save BWA index for future runs.",
                     "fa_icon": "far fa-file-code"
+                },
+                "fasta_index": {
+                    "type": "string",
+                    "default": null
                 },
                 "igenomes_base": {
                     "type": "string",

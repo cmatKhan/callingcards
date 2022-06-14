@@ -9,7 +9,7 @@
 include { FASTQC           } from '../../modules/nf-core/modules/fastqc/main'
 include { UMITOOLS_EXTRACT } from '../../modules/nf-core/modules/umitools/extract/main'
 
-workflow FASTQC_UMITOOLS {
+workflow UMITOOLS_FASTQC {
     take:
     reads         // channel: [ val(meta), [ reads ] ]
 

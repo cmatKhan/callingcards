@@ -38,12 +38,13 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
-include { INPUT_CHECK           } from '../subworkflows/local/input_check'
-include { SAMTOOLS_INDEX_GENOME } from '../subworkflows/nf-core/samtools_genome_index'
-include { UMITOOLS_FASTQC       } from '../subworkflows/nf-core/fastqc_umitools'
-include { BWAMEM2_SAMTOOLS      } from '../subworkflows/nf-core/bwamem2_samtools'
-include { PILEUP                } from '../subworkflows/nf-core/pileup'
-include { PARSE_PILEUP          } from '../subworkflows/local/parse_pileup'
+include { INPUT_CHECK            } from '../subworkflows/local/1_input_check'
+include { SAMTOOLS_INDEX_GENOME  } from '../subworkflows/nf-core/2_samtools_fasta_index'
+include { UMITOOLS_FASTQC        } from '../subworkflows/nf-core/3_umitools_fastqc'
+include { ALIGN                  } from '../subworkflows/local/4_align'
+include { PROCESS_ALIGNMENTS     } from '../subworkflows/local/5_process_alignments'
+include { QUANTIFY_HOPS          } from '../subworkflows/local/6_quantify_hops'
+include { PROCESS_QUANTIFICATION } from '../subworkflows/local/7_process_quantification'
 
 /*
 ========================================================================================
@@ -71,11 +72,13 @@ workflow CALLINGCARDS {
 
     // instantiate channels
     ch_versions          = Channel.empty()
-    ch_genome_index      = Channel.empty()
+    ch_fasta_index      = Channel.empty()
     ch_bam_index         = Channel.empty()
     ch_samtools_stats    = Channel.empty()
     ch_samtools_flatstat = Channel.empty()
     ch_samtools_idxstats = Channel.empty()
+
+    ch_fasta = file(params.fasta)
 
     //
     // SUBWORKFLOW_1: Read in samplesheet, validate and stage input files
@@ -91,19 +94,19 @@ workflow CALLINGCARDS {
     // output:
     //
     // if the user does not provide an genome index, index it
-    if (params.fasta_index == ''){
-        SAMTOOLS_INDEX_GENOME ( params.fasta )
+    if (!params.fasta_index){
+        SAMTOOLS_INDEX_GENOME ( ch_fasta )
         ch_versions = ch_versions.mix(SAMTOOLS_INDEX_GENOME.out.versions.first())
-        ch_genome_index = ch_genome_index.mix(SAMTOOLS_INDEX_GENOME.out.fai)
+        ch_fasta_index = ch_fasta_index.mix(SAMTOOLS_INDEX_GENOME.out.fai)
     } else {
-        ch_genome_index = ch_genome_index.mix(params.genome_index)
+        ch_fasta_index = file(params.fasta_index)
     }
 
     //
     // SUBWORKFLOW_3: run sequencer level QC, extract barcodes and trim
     //
     UMITOOLS_FASTQC (
-        input_check.out.reads
+        INPUT_CHECK.out.reads
     )
     ch_versions = ch_versions.mix(UMITOOLS_FASTQC.out.versions.first())
 
@@ -113,8 +116,8 @@ workflow CALLINGCARDS {
     // output:
     //
     ALIGN (
-        PROCESS_SEQUENCE_FILES.out.reads,
-        params.genome
+        UMITOOLS_FASTQC.out.reads,
+        ch_fasta
     )
     ch_versions = ch_versions.mix(ALIGN.out.versions.first())
 
@@ -123,10 +126,10 @@ workflow CALLINGCARDS {
     //              extract basic alignment stats
     //
 
-
     PROCESS_ALIGNMENTS (
         ALIGN.out.bam,
-        ch_genome_index
+        ch_fasta,
+        ch_fasta_index,
     )
     ch_samtools_stats    = PROCESS_ALIGNMENTS.out.stats
     ch_samtools_flagstat = PROCESS_ALIGNMENTS.out.flagstat
