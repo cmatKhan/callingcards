@@ -1,0 +1,2 @@
+sample,fastq_1,fastq_2,barcodes
+human_small,${projectDir}/conf/test_data/AY53-1_50k_downsampled_human.fastq.gz,,${projectDir}/conf/mammals_barcode_safelist.txt
