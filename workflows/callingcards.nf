@@ -91,10 +91,10 @@ workflow CALLINGCARDS {
     // output:
     //
     // if the user does not provide an genome index, index it
-    if (params.genome_index == ''){
-        SAMTOOLS_INDEX_GENOME ( params.genome )
+    if (params.fasta_index == ''){
+        SAMTOOLS_INDEX_GENOME ( params.fasta )
         ch_versions = ch_versions.mix(SAMTOOLS_INDEX_GENOME.out.versions.first())
-        ch_genome_index = ch_genome_index.mix(SAMTOOLS_INDEX_GENOME.out.genome_index)
+        ch_genome_index = ch_genome_index.mix(SAMTOOLS_INDEX_GENOME.out.fai)
     } else {
         ch_genome_index = ch_genome_index.mix(params.genome_index)
     }
