@@ -12,7 +12,7 @@ workflow INPUT_CHECK {
     SAMPLESHEET_CHECK ( samplesheet )
         .csv
         .splitCsv ( header:true, sep:',' )
-        .map { create_fastq_channel(it "${projectDir}/assets/dummy_file.txt") }
+        .map { create_fastq_channel(it) }
         .set { reads }
 
     emit:
@@ -23,6 +23,7 @@ workflow INPUT_CHECK {
 // Function to get list of [ meta, [ fastq_1, fastq_2 ] ]
 // where meta contains the sample id and path to the barcodes file
 // dummy_file is a string to a file which exists, but is empty
+// cite: nf-core/rnaseq pipeline
 def create_fastq_channel(LinkedHashMap row) {
     def meta = [:]
     meta.id           = row.sample
