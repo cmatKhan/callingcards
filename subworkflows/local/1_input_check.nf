@@ -23,23 +23,17 @@ workflow INPUT_CHECK {
 // Function to get list of [ meta, [ fastq_1, fastq_2 ] ]
 // where meta contains the sample id and path to the barcodes file
 // dummy_file is a string to a file which exists, but is empty
-def create_fastq_channel(LinkedHashMap row, String dummy_file) {
+def create_fastq_channel(LinkedHashMap row) {
     def meta = [:]
-    def fastq_2 = row.fastq_2 == '' :
-                    dummy_file ?
-                    row.fastq_2
-
     meta.id           = row.sample
-    // necessary in some of the nf-co modules. For calling cards,
-    // the reads will always be paired end
-    meta.single_end   = false
+    meta.single_end   = row.single_end.toBoolean()
 
     if(!file(row.barcodes).exists()){
         exit 1, "ERROR: Please check input samplesheet -> the barcodes file does not exist!\n${row.barcodes}"
 
     }
 
-    meta.barcodes     = row.barcodes
+    meta.barcodes     = file(row.barcodes)
 
     // add path(s) of the fastq file(s) to the meta map
     def fastq_meta = []
