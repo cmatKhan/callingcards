@@ -38,11 +38,12 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
-include { INPUT_CHECK      } from '../subworkflows/local/input_check'
-include { FASTQC_UMITOOLS  } from '../subworkflows/nf-core/fastqc_umitools'
-include { BWAMEM2_SAMTOOLS } from '../subworkflows/nf-core/bwamem2_samtools'
-include { PILEUP           } from '../subworkflows/nf-core/pileup'
-include { PARSE_PILEUP     } from '../subworkflows/local/parse_pileup'
+include { INPUT_CHECK           } from '../subworkflows/local/input_check'
+include { SAMTOOLS_INDEX_GENOME } from '../subworkflows/nf-core/samtools_genome_index'
+include { UMITOOLS_FASTQC       } from '../subworkflows/nf-core/fastqc_umitools'
+include { BWAMEM2_SAMTOOLS      } from '../subworkflows/nf-core/bwamem2_samtools'
+include { PILEUP                } from '../subworkflows/nf-core/pileup'
+include { PARSE_PILEUP          } from '../subworkflows/local/parse_pileup'
 
 /*
 ========================================================================================
@@ -68,10 +69,16 @@ def multiqc_report = []
 
 workflow CALLINGCARDS {
 
-    ch_versions = Channel.empty()
+    // instantiate channels
+    ch_versions          = Channel.empty()
+    ch_genome_index      = Channel.empty()
+    ch_bam_index         = Channel.empty()
+    ch_samtools_stats    = Channel.empty()
+    ch_samtools_flatstat = Channel.empty()
+    ch_samtools_idxstats = Channel.empty()
 
     //
-    // SUBWORKFLOW: Read in samplesheet, validate and stage input files
+    // SUBWORKFLOW_1: Read in samplesheet, validate and stage input files
     //
     INPUT_CHECK (
         ch_input
@@ -79,56 +86,70 @@ workflow CALLINGCARDS {
     ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
 
     //
-    // MODULESUBWORKFLOW: Use umi_tools to add barcodes to fastq id lines
-    FASTQC_UMITOOLS (
-        INPUT_CHECK.out.reads
-    )
-    ch_versions = ch_versions.mix(FASTQC_UMITOOLS.out.versions.first())
-
-    // MODULE: Align with bwamem2
-    ch_genome_bam                 = Channel.empty()
-    ch_genome_bam_index           = Channel.empty()
-    ch_samtools_stats             = Channel.empty()
-    ch_samtools_flagstat          = Channel.empty()
-    ch_samtools_idxstats          = Channel.empty()
-    ch_aligner_clustering_multiqc = Channel.empty()
-
-    BWAMEM2_SAMTOOLS (
-        FASTQC_UMITOOLS.out.reads,
-        params.fasta
-    )
-    // parse output into separate channels
-    ch_genome_bam        = BWAMEM2_SAMTOOLS.out.bam
-    ch_genome_bam_index  = BWAMEM2_SAMTOOLS.out.bai
-    ch_samtools_stats    = BWAMEM2_SAMTOOLS.out.stats
-    ch_samtools_flagstat = BWAMEM2_SAMTOOLS.out.flagstat
-    ch_samtools_idxstats = BWAMEM2_SAMTOOLS.out.idxstats
-    ch_versions = ch_versions.mix(BWAMEM2_SAMTOOLS.out.versions.first())
+    // SUBWORKFLOW_2: use samtools to create a .fai index for the genome
+    // input:
+    // output:
+    //
+    // if the user does not provide an genome index, index it
+    if (params.genome_index == ''){
+        SAMTOOLS_INDEX_GENOME ( params.genome )
+        ch_versions = ch_versions.mix(SAMTOOLS_INDEX_GENOME.out.versions.first())
+        ch_genome_index = ch_genome_index.mix(SAMTOOLS_INDEX_GENOME.out.genome_index)
+    } else {
+        ch_genome_index = ch_genome_index.mix(params.genome_index)
+    }
 
     //
-    // MODULE: run BamQC
-    // BAMQC (
-    //    ALIGN.out.bams // NOTE NEED TO SPLIT THIS ? HOW HANDLED IN RNASEQ?
+    // SUBWORKFLOW_3: run sequencer level QC, extract barcodes and trim
+    //
+    UMITOOLS_FASTQC (
+        input_check.out.reads
+    )
+    ch_versions = ch_versions.mix(UMITOOLS_FASTQC.out.versions.first())
+
+    //
+    // SUBWORKFLOW_4: align reads
+    // input:
+    // output:
+    //
+    ALIGN (
+        PROCESS_SEQUENCE_FILES.out.reads,
+        params.genome
+    )
+    ch_versions = ch_versions.mix(ALIGN.out.versions.first())
+
+    //
+    // SUBWORKFLOW_5: sort, add barcodes as read group, add tags, index and
+    //              extract basic alignment stats
+    //
+
+
+    PROCESS_ALIGNMENTS (
+        ALIGN.out.bam,
+        ch_genome_index
+    )
+    ch_samtools_stats    = PROCESS_ALIGNMENTS.out.stats
+    ch_samtools_flagstat = PROCESS_ALIGNMENTS.out.flagstat
+    ch_samtools_idxstats = PROCESS_ALIGNMENTS.out.idxstats
+    ch_versions          = ch_versions.mix(PROCESS_ALIGNMENTS.out.versions.first())
+
+    //
+    // SUBWORKFLOW_6: turn alignments into ccf (modified bed format) which
+    //              may be used to quantify hops per TF per promoter region
+    // QUANTIFY_HOPS (
+    //     mpileup,
+    //     barcode_length,
+    //     promoter_bed,
+    //     background_data,
+    //     pileup_stranded
     // )
-    //ch_versions = ch_versions.mix(BAMQC.out.versions.first())
 
-    // MODULE: Run Quantification QC
-    PILEUP (
-       ch_genome_bam,
-       params.fasta
-    )
-    ch_versions = ch_versions.mix(PILEUP.out.versions.first())
+    //
+    // SUBWORKFLOW_7: calculate statistics and other metrics relating to the hops
+    //
+    // PROCESS_QUANTIFICATION (
 
-    // Module: Parse the pileup into a sqlite db and calculate enrichment
-    //         over the promoters
-    PARSE_PILEUP (
-       PILEUP.out.mpileup,
-       params.barcode_length,
-       params.promoter_bed,
-       params.background_data,
-       params.pileup_stranded
-    )
-    ch_versions = ch_versions.mix(PARSE_PILEUP.out.versions.first())
+    // )
 
     //
     // collect software versions into file
@@ -148,7 +169,7 @@ workflow CALLINGCARDS {
     ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_custom_config.collect().ifEmpty([]))
     ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
     ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
-    ch_multiqc_files = ch_multiqc_files.mix(FASTQC_UMITOOLS.out.fastqc_zip.collect{it[1]}.ifEmpty([]))
+    ch_multiqc_files = ch_multiqc_files.mix(UMITOOLS_FASTQC.out.fastqc_zip.collect{it[1]}.ifEmpty([]))
     ch_multiqc_files = ch_multiqc_files.mix(ch_samtools_stats.collect{it[1]}.ifEmpty([]))
     ch_multiqc_files = ch_multiqc_files.mix(ch_samtools_flagstat.collect{it[1]}.ifEmpty([]))
     ch_multiqc_files = ch_multiqc_files.mix(ch_samtools_idxstats.collect{it[1]}.ifEmpty([]))

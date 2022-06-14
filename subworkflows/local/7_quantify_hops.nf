@@ -5,7 +5,7 @@
 include { CREATE_PILEUP_DB } from '../../modules/local/create_pileup_db'
 include { PROMOTER_ENRICHMENT } from '../../modules/local/promoter_enrichment'
 
-workflow PARSE_PILEUP {
+workflow PARSE_MPILEUP {
     take:
     pileup      // channel: [ val(meta), [ pileup ] ]
     barcode_length  // a value, length of the barcode, eg 13

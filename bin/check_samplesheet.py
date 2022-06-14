@@ -108,7 +108,15 @@ def check_samplesheet(file_in, file_out):
                     and it must be a tsv file with extension tsv", "Line", line)
 
             ## make list of the three validated items associated with each sample
-            sample_info = [fastq_1, fastq_2, barcodes]
+            ## Auto-detect paired-end/single-end
+            ## cite: nf-core/rnaseq/check_samplesheet.csv
+            sample_info = []  ## [single_end, fastq_1, fastq_2, strandedness]
+            if sample and fastq_1 and fastq_2:  ## Paired-end short reads
+                sample_info = ["0", fastq_1, fastq_2, barcodes]
+            elif sample and fastq_1 and not fastq_2:  ## Single-end short reads
+                sample_info = ["1", fastq_1, fastq_2, barcodes]
+            else:
+                print_error("Invalid combination of columns provided!", "Line", line)
 
             ## Create sample mapping dictionary = { sample: [fastq_1, fastq_2 ] }
             if sample not in sample_mapping_dict:
@@ -124,7 +132,7 @@ def check_samplesheet(file_in, file_out):
         out_dir = os.path.dirname(file_out)
         make_dir(out_dir)
         with open(file_out, "w") as fout:
-            fout.write(",".join(["sample", "fastq_1", "fastq_2", "barcodes"]) + "\n")
+            fout.write(",".join(["sample", "single_end", "fastq_1", "fastq_2", "barcodes"]) + "\n")
             for sample in sorted(sample_mapping_dict.keys()):
 
                 ## Check that multiple runs of the same sample are of the same datatype
