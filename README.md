@@ -16,6 +16,8 @@
 
 ## DEVELOPMENT NOTES
 
+__CURRENTLY THE WORKING BRANCH IS MAMMALS_PIPELINE__
+
 ### DEVELOPMENT INSTALLATION
 
 You will need the following two pieces of software to run this pipeline:
