@@ -22,8 +22,8 @@ __CURRENTLY THE WORKING BRANCH IS MAMMALS_PIPELINE__
 
 You will need the following two pieces of software to run this pipeline:
 
-1. Nextflow
-2. One of: Singularity, Docker or conda (singularity or docker are far preferred)
+1. [Nextflow](https://www.nextflow.io/)
+2. One of: [Singularity](https://sylabs.io/singularity/), [Docker](https://www.docker.com/) or [conda](https://docs.conda.io/en/latest/) (singularity or docker are far preferred)2. One of: Singularity, Docker or conda (singularity or docker are far preferred)
 
 AND, you will need to download [git lfs](https://git-lfs.github.com/) in order to
 fully clone this repository. This is not a good way of doing the test data, but
@@ -40,7 +40,7 @@ using Windows, you should think about the life choices that have brought you to
 this point, and then partition your hard drive and install ubuntu. Or, google
 about and then let me know what works, and I'll update the readme.
 
-Alternatively, let me know, and I'll send you a a zipped version.
+Alternatively, email me, and I'll send you a a zipped version of the repo.
 
 Note: it isn't necessary to make the cc_tester directory -- call it whatever you
 like, or do this differently. Just make sure the path in the run script below
@@ -56,7 +56,7 @@ $ cd cc_tester
 $ git clone https://github.com/cmatKhan/mislabels.git
 $ cd callingcards
 $ git checkout mammals_pipeline
-$ cc ..
+$ cd ..
 # at this point, you are in cc_tester
 ```
 
@@ -67,8 +67,7 @@ Next, copy and paste the script below into a file called, for example, `run_nf.s
 
 mkdir tmp
 
-# choose how you want to handle the dependencies -- I have only tested singularity, but
-# the other likely work
+# CHOOSE ONE OF SINGULARITY, DOCKER OR CONDA. I haven't tested docker. It probably works
 nextflow run nf-core-callingcards/main.nf  -profile test_sge,<singularity/docker/conda> -resume
 
 ```
@@ -78,7 +77,7 @@ in the same directory from which you are launching this script.
 This will run the pipeline locally, meaning the compute resources come from
 the machine from which you launch. Be careful -- don't do this from a login node
 on the cluster, for example. This will work on your local computer, or an interactive
-node with at least 16GB ram.
+node, with at least 16GB ram.
 
 If you want to test this via scheduler submission, then here are examples of
 SLURM and and SGE submission scripts:
@@ -96,7 +95,8 @@ mkdir tmp
 nextflow run callingcards/main.nf  -profile test_slurm,singularity -resume
 ```
 
-__SGE__ (dsg -- the genetics cluster. Note that singularity is not available on the compute nodes, so I am using conda instead)
+
+__SGE__ (dsg -- the genetics cluster. Note that I'm using conda, not singularity, since singularity isn't available on their cluster)
 ```
 #!/bin/bash
 
