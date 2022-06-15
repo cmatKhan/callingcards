@@ -22,8 +22,8 @@ __CURRENTLY THE WORKING BRANCH IS MAMMALS_PIPELINE__
 
 You will need the following two pieces of software to run this pipeline:
 
-1. Nextflow
-2. Singularity, Docker or conda (singularity or docker are far preferred)
+1. [Nextflow](https://www.nextflow.io/)Nextflow
+2. One of: [Singularity](https://sylabs.io/singularity/), [Docker](https://www.docker.com/) or [conda](https://docs.conda.io/en/latest/) (singularity or docker are far preferred)2. One of: Singularity, Docker or conda (singularity or docker are far preferred)
 
 AND, you will need to download [git lfs](https://git-lfs.github.com/) in order to
 fully clone this repository. This is not a good way of doing the test data, but
@@ -56,7 +56,7 @@ $ cd cc_tester
 $ git clone https://github.com/cmatKhan/mislabels.git
 $ cd callingcards
 $ git checkout mammals_pipeline
-$ cc ..
+$ cd ..
 # at this point, you are in cc_tester
 ```
 
@@ -96,7 +96,7 @@ mkdir tmp
 nextflow run callingcards/main.nf  -profile test_slurm,singularity -resume
 ```
 
-__SGE__ (dsg -- the genetics cluster. Note that singularity is not available on the compute nodes)
+__SGE__ (dsg -- the genetics cluster. Note that singularity is not available on the compute nodes, so I am using conda instead)
 ```
 #!/bin/bash
 
@@ -114,10 +114,11 @@ source activate $root/conda_envs/nextflow
 
 mkdir tmp
 
-nextflow run nf-core-callingcards/main.nf  -profile test_sge,singularity -resume
+nextflow run nf-core-callingcards/main.nf  -profile test_sge,conda -resume
 
 ```
 
+# IGNORE EVERYTHING BELOW
 ## Introduction
 
 <!-- TODO nf-core: Write a 1-2 sentence summary of what data the pipeline is for and what it does -->
