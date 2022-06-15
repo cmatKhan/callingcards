@@ -40,7 +40,7 @@ using Windows, you should think about the life choices that have brought you to
 this point, and then partition your hard drive and install ubuntu. Or, google
 about and then let me know what works, and I'll update the readme.
 
-Alternatively, let me know, and I'll send you a a zipped version.
+Alternatively, email me, and I'll send you a a zipped version of the repo.
 
 Note: it isn't necessary to make the cc_tester directory -- call it whatever you
 like, or do this differently. Just make sure the path in the run script below
