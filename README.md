@@ -78,7 +78,7 @@ in the same directory from which you are launching this script.
 This will run the pipeline locally, meaning the compute resources come from
 the machine from which you launch. Be careful -- don't do this from a login node
 on the cluster, for example. This will work on your local computer, or an interactive
-node with at least 16GB ram.
+node, with at least 16GB ram.
 
 If you want to test this via scheduler submission, then here are examples of
 SLURM and and SGE submission scripts:
