@@ -139,7 +139,7 @@ def add_read_group_and_tags(bampath_in, bampath_out, genome_path,
             # The span of the n bases preceding the insertion are:
             # [insert, insert + n)
             region_dict['start'] = insert
-            region_dict['end']   = insert + (insertion_length)
+            region_dict['end']   = insert + insertion_length
         # else, Read is in the forward orientation
         else:
             # see if clause for lengthy explanation. This examines the first
@@ -155,15 +155,13 @@ def add_read_group_and_tags(bampath_in, bampath_out, genome_path,
             insert = insert - soft_clip_length
             # The span of the n bases preceding the insertions are:
             # [insert - n, insert)
-            region_dict['start'] = insert - (insertion_length)
+            region_dict['start'] = insert - insertion_length
             region_dict['end']   = insert
 
         # Create the tag strings -----------------------------------------------
         tag_dict = dict()
         tag_dict['RG'] = read.query_name[-id_length:]
-        tag_dict['XI'] = "{0}|{1}|{2}|+".format(read.reference_name,
-                                        region_dict['start'],
-                                        region_dict['end'])
+        tag_dict['XI'] = region_dict['start']
         tag_dict['XZ'] = genome.fetch(read.reference_name,
                               region_dict['start'],
                               region_dict['end']).upper()
@@ -182,7 +180,7 @@ def add_read_group_and_tags(bampath_in, bampath_out, genome_path,
     input_bamfile.close()
 
     # Re-index the output ------------------------------------------------------
-    # TODO check if this is necessary...it is here only to prevent the message:
+    # This is only here only to prevent the message:
     # WARNING: bam timestamp and read timestamp are different that you sometimes
     # get when the bam is modified after the index is created
     pysam.index(bampath_out)

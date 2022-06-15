@@ -95,9 +95,7 @@ workflow CALLINGCARDS {
     if (!params.fasta_index){
         SAMTOOLS_INDEX_FASTA ( params.fasta )
         ch_versions = ch_versions.mix(SAMTOOLS_INDEX_FASTA.out.versions.first())
-        SAMTOOLS_INDEX_FASTA.out.fai.collect().view()
         ch_fasta_index = SAMTOOLS_INDEX_FASTA.out.fai
-        ch_fasta_index.collect().view()
     } else {
         ch_fasta_index = Channel.fromPath(params.fasta_index)
     }
@@ -125,7 +123,6 @@ workflow CALLINGCARDS {
     // SUBWORKFLOW_5: sort, add barcodes as read group, add tags, index and
     //              extract basic alignment stats
     //
-ALIGN.out.bam.collect().view()
     PROCESS_ALIGNMENTS (
         ALIGN.out.bam,
         params.fasta,

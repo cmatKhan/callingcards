@@ -18,8 +18,9 @@ process ADD_RG_AND_TAGS {
 
 
     output:
-    tuple val(meta), path("*tagged.bam"), path("*tagged.bam.bai")  , emit: bam_index
-    path  "versions.yml"                                          , emit: versions
+    tuple val(meta), path("*tagged.bam") , emit: bam_index
+    path("*tagged.bam.bai")              , emit: bai
+    path  "versions.yml"                 , emit: versions
 
     script: // see nf-core-callingcards/bin/add_read_group_to_bam.py
     """

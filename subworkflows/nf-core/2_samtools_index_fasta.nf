@@ -19,8 +19,6 @@ workflow SAMTOOLS_INDEX_FASTA {
     SAMTOOLS_FAIDX ( ch_genome )
     ch_versions = ch_versions.mix(SAMTOOLS_FAIDX.out.versions)
 
-    SAMTOOLS_FAIDX.out.fai.collect().view()
-
     emit:
     fai      = SAMTOOLS_FAIDX.out.fai  // channel: path(*.fai)
     versions = ch_versions             // channel: [ versions.yml ]
