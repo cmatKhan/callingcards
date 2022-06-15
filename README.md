@@ -67,8 +67,7 @@ Next, copy and paste the script below into a file called, for example, `run_nf.s
 
 mkdir tmp
 
-# CHOOSE ONE OF SINGULARITY, DOCKER OR CONDA. I have only tested singularity, but the others 
-# probably work
+# CHOOSE ONE OF SINGULARITY, DOCKER OR CONDA. I haven't tested docker. It probably works
 nextflow run nf-core-callingcards/main.nf  -profile test_sge,<singularity/docker/conda> -resume
 
 ```
