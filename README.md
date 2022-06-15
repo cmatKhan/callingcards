@@ -22,7 +22,7 @@ __CURRENTLY THE WORKING BRANCH IS MAMMALS_PIPELINE__
 
 You will need the following two pieces of software to run this pipeline:
 
-1. [Nextflow](https://www.nextflow.io/)Nextflow
+1. [Nextflow](https://www.nextflow.io/)
 2. One of: [Singularity](https://sylabs.io/singularity/), [Docker](https://www.docker.com/) or [conda](https://docs.conda.io/en/latest/) (singularity or docker are far preferred)2. One of: Singularity, Docker or conda (singularity or docker are far preferred)
 
 AND, you will need to download [git lfs](https://git-lfs.github.com/) in order to
