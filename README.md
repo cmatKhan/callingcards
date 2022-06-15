@@ -56,7 +56,7 @@ $ cd cc_tester
 $ git clone https://github.com/cmatKhan/mislabels.git
 $ cd callingcards
 $ git checkout mammals_pipeline
-$ cc ..
+$ cd ..
 # at this point, you are in cc_tester
 ```
 
