@@ -67,8 +67,8 @@ Next, copy and paste the script below into a file called, for example, `run_nf.s
 
 mkdir tmp
 
-# choose how you want to handle the dependencies -- I have only tested singularity, but
-# the other likely work
+# CHOOSE ONE OF SINGULARITY, DOCKER OR CONDA. I have only tested singularity, but the others 
+# probably work
 nextflow run nf-core-callingcards/main.nf  -profile test_sge,<singularity/docker/conda> -resume
 
 ```
