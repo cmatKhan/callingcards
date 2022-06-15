@@ -11,8 +11,8 @@ include { SAMTOOLS_MPILEUP          } from '../../modules/nf-core/modules/samtoo
 workflow PROCESS_ALIGNMENTS {
     take:
     bam // channel: [ val(meta), [ bam ] ]
-    genome // path(genome) path to the fasta file
-    fai // path(fasta index) path to the index of the genome fasta file
+    fasta // path(genome.fasta) path to the fasta file
+    fai // channel: [val(meta), path(fasta index)] note that the meta is empty
 
     main:
 
@@ -25,15 +25,16 @@ workflow PROCESS_ALIGNMENTS {
 
     ADD_RG_AND_TAGS (
         SAMTOOLS_SORT_INDEX_STATS.out.bam_index,
-        genome,
+        fasta,
         fai,
-        params.barcode_length
+        params.barcode_length,
+        params.insertion_length
     )
     ch_version = ch_versions.mix(ADD_RG_AND_TAGS.out.versions)
 
     SAMTOOLS_MPILEUP(
         ADD_RG_AND_TAGS.out.bam_index,
-        genome
+        fasta
     )
     ch_versions = ch_versions.mix(SAMTOOLS_MPILEUP.out.versions)
 

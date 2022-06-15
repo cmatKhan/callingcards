@@ -17,7 +17,7 @@ process CREATE_PILEUP_DB {
     when:
     task.ext.when == null || task.ext.when
 
-    script: // This script is bundled with the pipeline, in nf-core/callingcards/bin/
+    script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """

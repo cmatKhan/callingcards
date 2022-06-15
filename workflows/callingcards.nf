@@ -39,7 +39,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
 include { INPUT_CHECK            } from '../subworkflows/local/1_input_check'
-include { SAMTOOLS_INDEX_GENOME  } from '../subworkflows/nf-core/2_samtools_fasta_index'
+include { SAMTOOLS_INDEX_FASTA  } from '../subworkflows/nf-core/2_samtools_index_fasta'
 include { UMITOOLS_FASTQC        } from '../subworkflows/nf-core/3_umitools_fastqc'
 include { ALIGN                  } from '../subworkflows/local/4_align'
 include { PROCESS_ALIGNMENTS     } from '../subworkflows/local/5_process_alignments'
@@ -72,13 +72,11 @@ workflow CALLINGCARDS {
 
     // instantiate channels
     ch_versions          = Channel.empty()
-    ch_fasta_index      = Channel.empty()
+    ch_fasta_index       = Channel.empty()
     ch_bam_index         = Channel.empty()
     ch_samtools_stats    = Channel.empty()
     ch_samtools_flatstat = Channel.empty()
     ch_samtools_idxstats = Channel.empty()
-
-    ch_fasta = file(params.fasta)
 
     //
     // SUBWORKFLOW_1: Read in samplesheet, validate and stage input files
@@ -95,11 +93,13 @@ workflow CALLINGCARDS {
     //
     // if the user does not provide an genome index, index it
     if (!params.fasta_index){
-        SAMTOOLS_INDEX_GENOME ( ch_fasta )
-        ch_versions = ch_versions.mix(SAMTOOLS_INDEX_GENOME.out.versions.first())
-        ch_fasta_index = ch_fasta_index.mix(SAMTOOLS_INDEX_GENOME.out.fai)
+        SAMTOOLS_INDEX_FASTA ( params.fasta )
+        ch_versions = ch_versions.mix(SAMTOOLS_INDEX_FASTA.out.versions.first())
+        SAMTOOLS_INDEX_FASTA.out.fai.collect().view()
+        ch_fasta_index = SAMTOOLS_INDEX_FASTA.out.fai
+        ch_fasta_index.collect().view()
     } else {
-        ch_fasta_index = file(params.fasta_index)
+        ch_fasta_index = Channel.fromPath(params.fasta_index)
     }
 
     //
@@ -117,7 +117,7 @@ workflow CALLINGCARDS {
     //
     ALIGN (
         UMITOOLS_FASTQC.out.reads,
-        ch_fasta
+        params.fasta
     )
     ch_versions = ch_versions.mix(ALIGN.out.versions.first())
 
@@ -125,11 +125,11 @@ workflow CALLINGCARDS {
     // SUBWORKFLOW_5: sort, add barcodes as read group, add tags, index and
     //              extract basic alignment stats
     //
-
+ALIGN.out.bam.collect().view()
     PROCESS_ALIGNMENTS (
         ALIGN.out.bam,
-        ch_fasta,
-        ch_fasta_index,
+        params.fasta,
+        ch_fasta_index
     )
     ch_samtools_stats    = PROCESS_ALIGNMENTS.out.stats
     ch_samtools_flagstat = PROCESS_ALIGNMENTS.out.flagstat

@@ -4,7 +4,7 @@
 
 include { SAMTOOLS_FAIDX } from '../../modules/nf-core/modules/samtools/faidx/main'
 
-workflow SAMTOOLS_INDEX_GENOME {
+workflow SAMTOOLS_INDEX_FASTA {
     take:
     fasta   // path(genome)
 
@@ -19,7 +19,9 @@ workflow SAMTOOLS_INDEX_GENOME {
     SAMTOOLS_FAIDX ( ch_genome )
     ch_versions = ch_versions.mix(SAMTOOLS_FAIDX.out.versions)
 
+    SAMTOOLS_FAIDX.out.fai.collect().view()
+
     emit:
-    fai   = SAMTOOLS_FAIDX.out.fai.last()  // channel: path(*.fai)
-    versions       = ch_versions             // channel: [ versions.yml ]
+    fai      = SAMTOOLS_FAIDX.out.fai  // channel: path(*.fai)
+    versions = ch_versions             // channel: [ versions.yml ]
 }

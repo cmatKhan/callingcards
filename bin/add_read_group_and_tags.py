@@ -87,20 +87,18 @@ def add_read_group_and_tags(bampath_in, bampath_out, genome_path,
     #       add the header without re-writing the whole bam so that only loops
     #       one time.
 
-    # open the genome file for random access on disc
+    # open files ---------------------------------------------------------------
+    # including the index allows random access on disc
     genome = pysam.FastaFile(genome_path, genome_index_path)
-
-    # Prepare the input bam ----------------------------------------------------
-    pysam.sort("-o", bampath_in, "-@", nthreads , bampath_in)
-    pysam.index(bampath_in)
+    # open the input bam
+    input_bamfile = pysam.AlignmentFile(bampath_in, "rb")
 
     # Get the set of unique barcodes in the input_bamfile ----------------------
     # extract current header
     new_header = input_bamfile.header.copy().to_dict()
     # instantiate a set object
     barcode_set = set()
-    # open the input bam
-    input_bamfile = pysam.AlignmentFile(bampath_in, "rb")
+
     # loop through the reads in the input bam, extract unique barcodes, add to
     # barcode set
     for read in input_bamfile.fetch():

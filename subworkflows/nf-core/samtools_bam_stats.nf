@@ -7,7 +7,7 @@ include { SAMTOOLS_STATS    } from '../../modules/nf-core/modules/samtools/stats
 include { SAMTOOLS_IDXSTATS } from '../../modules/nf-core/modules/samtools/idxstats/main'
 include { SAMTOOLS_FLAGSTAT } from '../../modules/nf-core/modules/samtools/flagstat/main'
 
-workflow BAM_STATS_SAMTOOLS {
+workflow SAMTOOLS_BAM_STATS {
     take:
     ch_bam_bai // channel: [ val(meta), [ bam ], [bai/csi] ]
 

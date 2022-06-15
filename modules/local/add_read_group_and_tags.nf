@@ -9,25 +9,28 @@ process ADD_RG_AND_TAGS {
         'quay.io/biocontainers/pysam' }"
 
     input:
-    tuple val(meta), path(bam)
-    path genome   // fasta file
-    path genome_index
+    tuple val(meta), path(bam), path(bai)
+    path fasta   // fasta file
+    tuple val(empty_meta), path(fai)
     val barcode_length // numeric value, eg 13
+    val insertion_length
+
+
 
     output:
-    tuple val(meta), path("*tagged.bam"),path("*tagged.bam.bai")  , emit: bam_index
+    tuple val(meta), path("*tagged.bam"), path("*tagged.bam.bai")  , emit: bam_index
     path  "versions.yml"                                          , emit: versions
 
     script: // see nf-core-callingcards/bin/add_read_group_to_bam.py
     """
-    add_read_group_and_tags.py \\
-        $bam \\
-        $genome \\
-        $genome_index \\
-        "${meta}_tagged.bam" \\
-        $barcode_length \\
-        $task.cpus
-
+        add_read_group_and_tags.py \\
+          $bam \\
+          "${meta.id}_tagged.bam" \\
+          $fasta \\
+          $fai \\
+          $barcode_length \\
+          $insertion_length \\
+          $task.cpus
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -36,6 +39,3 @@ process ADD_RG_AND_TAGS {
 
     """
 }
-
-// ${bam/%\.bam/_tagged.bam} \\
-        // $task.cpus
