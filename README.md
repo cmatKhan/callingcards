@@ -27,7 +27,7 @@ You will need the following two pieces of software to run this pipeline:
 
 AND, you will need to download [git lfs](https://git-lfs.github.com/) in order to
 fully clone this repository. This is not a good way of doing the test data, but
-I until I curtail the chr1 fasta file, it is how I am doing it.
+until I curtail the chr1 fasta file, it is how I am doing it.
 If you are on a linux system, do this:
 
 ```
