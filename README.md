@@ -16,203 +16,104 @@
 
 ## DEVELOPMENT NOTES
 
-### TL;DR
+__CURRENTLY THE WORKING BRANCH IS MAMMALS_PIPELINE__
 
-If you'd like to try this out on your own, you may copy this directory into
-your own working directory:
+### DEVELOPMENT INSTALLATION
 
-```
-/lts/mblab/personal/chasem/cc_tester
-```
+You will need the following two pieces of software to run this pipeline:
 
-You might do this with `rsync` on the cluster like so:
+1. Nextflow
+2. Singularity, Docker or conda (singularity or docker are far preferred)
 
-```
-rsync -aHv /lts/mblab/personal/chasem/cc_tester /scratch/<your_lab>/<your_scratch>/
-```
-
-Or you might pull this onto your local computer. As long as you have installed
-Singularity and Nextflow (both easy -- search for the respective documentation
-and follow the instructions. Don't bother with any 'how to' sites, just go do the docs).
-
-On the new cluster, if you haven't already installed singularity and nextflow, do this:
+You will need to download [git lfs](https://git-lfs.github.com/) in order to
+fully clone this repository. If you are on a linux system, do this:
 
 ```
-$ interactive
-$ spack install singularityce
-$ spack install nextflow
+$ sudo apt update
+$ sudo apt install git-lfs
+$ git lfs install
 ```
-Note that singularity is `singularityce`. At this point, you should be able
-to follow the HTCF documentation to run this pipeline. If not, then the HTCF
-documentation is lacking -- let me know, I'll help, and then we'll e-mail the
-sys admins together with suggestions for better documentation.
+If you're using mac, then you can probably substitute `apt` for `brew`. If you're
+using Windows, you should think about the life choices that have brought you to
+this point, and then partition your hard drive and install ubuntu. Or, google
+about and then let me know what works, and I'll update the readme.
 
-To pull onto your local computer, do this:
+Alternatively, let me know, and I'll send you a a zipped version.
 
-```
-scp -r <your_username>@login.htcf.wustl.edu:/lts/mblab/personal/cc_tester /path/on/your/computer/
-```
+Note: it isn't necessary to make the cc_tester directory -- call it whatever you
+like, or do this differently. Just make sure the path in the run script below
+points to the main.nf file in the callingcards repo.
 
-It only takes 36 minutes or so to run this on a local.
-
-Regardless of where you put the data, once it is there, `cd` into the directory.
-
-__CRITICAL__ Before doing anything else, open the params.json file and change
-the paths so that they accurately point to the files on your computer (it is a
-near term to do to make this such that you could use relative paths, but for
-now, you need absolute). __Do the same thing__ to the input_samplesheet.csv file.
-
-To launch the pipeline, now do this:
+Assuming you have git lfs, then clone the repo. _VERY IMPORTANT_: after cloning,
+checkout the mammals_pipeline branch:
 
 ```
-nextflow run callingcards/main.nf -c local.config -params-file params.json -resume
-```
-Note that you may do this via an sbatch script.
-
-The output will be in your `$PWD`, and will look like this:
-
-```
-> ls results
-bwamem2  create  fastqc  multiqc  pipeline_info  promoter  samtools  umitools
-
-```
-The promoter enrichment is in `promoter`. The pileup database is in `create`.
-The alignment file (bam) and raw pileup is in `samtools`. Fixing this output so
-that things end up in mroe logical places is a near term `TODO`.
-### A longer explanation
-
-All basic steps of the pipeline currently run:
-
-The barcodes are first extracted, and the reads trimmed, by UMItools. The reads
-are sent through fastQC and then aligned. The alignment is indexed, sorted
-and then transformed into a pileup. The pileup is processed into a sqlite database,
-and that is used to extract reads over pre-defined promoter regions and to calculate
-enrichment. The nice thing about parsing the pileup into a sqlite database is that
-it is quick and easy to re-calculate enrichment with a different promoter definition.
-see [calling cards tools](https://github.com/cmatKhan/callingCardsTools)
-
-This will process any number of calling cards experiments simultaneously (or as
-simultaneously as the cluster scheduler will allow). Also, a single calling cards
-experiment can be processed on a local computer in about a half an hour.
-
-The command to submit the job looks like this:
-
-```
-nextflow run nf-core-callingcards/main.nf -c local.config -params-file params.json -resume
+$ mkdir cc_tester
+# you could download/install the nextflow executable in this directory
+$ cd cc_tester
+$ git clone https://github.com/cmatKhan/mislabels.git
+$ cd callingcards
+$ git checkout mammals_pipeline
+$ cc ..
+# at this point, you are in cc_tester
 ```
 
-params file looks like
+Next, copy and paste the script below into a file called, for example, `run_nf.sh`
 
 ```
-{
-  "input":"input_samplesheet.csv",
-  "fasta":"\/home\/oguzkhan\/ref\/S288C_R64\/GCF_000146045.2_R64_genomic.fa",
-  "r1_bc_pattern":"NNNNNXXXXXXXXXXXXXXXXX",
-  "r2_bc_pattern":"NNNNNNNNXXXX",
-  "barcode_length": 13,
-  "samtools_mpileup_adjust_mq": 50,
-  "min_mapq": 10,
-  "promoter_bed": "\/home\/oguzkhan\/Desktop\/tmp\/cc_tester\/promoter_test.bed",
-  "background_data": "\/home\/oguzkhan\/Desktop\/tmp\/cc_tester\/NOTF_Minus_Adh1_2015_17_combined_chase_edit.csv",
-  "pileup_stranded": "FALSE"
-}
+#!/bin/bash
+
+mkdir tmp
+
+# choose how you want to handle the dependencies -- I have only tested singularity, but
+# the other likely work
+nextflow run nf-core-callingcards/main.nf  -profile test_sge,<singularity/docker/conda> -resume
 
 ```
-input file looks like
+Note that this assumes that nextflow is either in your `$PATH`, or the executable is
+in the same directory from which you are launching this script.
 
-__NOTE__: There is a caveat here. Currently, the path to the tf barcode map
-must be the absolute path.
+This will run the pipeline locally, meaning the compute resources come from
+the machine from which you launch. Be careful -- don't do this from a login node
+on the cluster, for example. This will work on your local computer, or an interactive
+node with at least 16GB ram.
+
+If you want to test this via scheduler submission, then here are examples of
+SLURM and and SGE submission scripts:
+
+__SLURM__ (htcf)
 ```
-sample,fastq_1,fastq_2,barcodes
-test1,PhiX_S1_R1_001.fastq.gz,PhiX_S1_R2_001.fastq.gz,demult_barcodes.tsv
+#!/usr/bin/env bash
+
+eval $(spack load --sh openjdk)
+eval $(spack load --sh singularityce@3.8.0)
+eval $(spack load --sh nextflow)
+
+mkdir tmp
+
+nextflow run callingcards/main.nf  -profile test_slurm,singularity -resume
 ```
-where barcodes.tsv looks like
 
-__MAKE SURE__ the tsv is actually a tsv. It is a good idea to read it into
-R/python and parse it with read_tsv to make sure it comes out in two rows.
-Checking this at input is a TODO that I haven't yet incorporated.
+__SGE__ (dsg -- the genetics cluster. Note that singularity is not available on the compute nodes)
 ```
-> cat demult_barcodes.tsv
-MIG2    TCAGTCCCGTTGG
-CAT8    GCCTGGGCGGCAG
-GLN3    ATTTGGGGGGGGT
-ARO80   TTGGTGGGGGTAG
-CBF1    CTCGGTCGTCAGT
-```
-and the config looks like
+#!/bin/bash
 
-```
-> cat local.config
-singularity {
+#$ -N nf_tester
+#$ -cwd
+#$ -o /dsgmnt/llfs_external/$USER/logs
+#$ -e /dsgmnt/llfs_external/$USER/logs
 
-  enabled = true
-  autoMounts = true
-  cacheDir = "${launchDir}/singularity_images/"
-  runOptions = "--bind ${launchDir}/tmp:/tmp"
+root=/dsgmnt/llfs_external/cmateusiak
 
-}
+# activate environment
+# note that in this case, I installed nextflow using conda like so:
+# conda create -p /path/to/envs/dir/nextflow nextflow
+source activate $root/conda_envs/nextflow
 
-process {
+mkdir tmp
 
-  executor = "local"
-  scratch = true
-  scratch = "${launchDir}/tmp"
+nextflow run nf-core-callingcards/main.nf  -profile test_sge,singularity -resume
 
-  withLabel:process_medium {
-    cpus = { check_max( 6 * task.attempt, 'cpus' ) }
-    memory = { check_max( 25.GB * task.attempt, 'memory' ) }
-    time = { check_max( 8.h * task.attempt, 'time' ) }
-  }
-
-  withLabel:process_high {
-    cpus = { check_max( 12 * task.attempt, 'cpus' ) }
-    memory = { check_max( 25.GB * task.attempt, 'memory' ) }
-    time = { check_max( 8.h * task.attempt, 'time' ) }
-  }
-}
-
-params {
-
-    // Max resource options
-    // Defaults only, expecting to be overwritten
-    max_memory                 = '128.GB'
-    max_cpus                   = 24
-    max_time                   = '240.h'
-
-}
-
-// Function to ensure that resource requirements don't go beyond
-// a maximum limit
-def check_max(obj, type) {
-  if (type == 'memory') {
-    try {
-      if (obj.compareTo(params.max_memory as nextflow.util.MemoryUnit) == 1)
-        return params.max_memory as nextflow.util.MemoryUnit
-      else
-        return obj
-    } catch (all) {
-      println "   ### ERROR ###   Max memory '${params.max_memory}' is not valid! Using default value: $obj"
-      return obj
-    }
-  } else if (type == 'time') {
-    try {
-      if (obj.compareTo(params.max_time as nextflow.util.Duration) == 1)
-        return params.max_time as nextflow.util.Duration
-      else
-        return obj
-    } catch (all) {
-      println "   ### ERROR ###   Max time '${params.max_time}' is not valid! Using default value: $obj"
-      return obj
-    }
-  } else if (type == 'cpus') {
-    try {
-      return Math.min( obj, params.max_cpus as int )
-    } catch (all) {
-      println "   ### ERROR ###   Max cpus '${params.max_cpus}' is not valid! Using default value: $obj"
-      return obj
-    }
-  }
-}
 ```
 
 ## Introduction
