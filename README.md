@@ -118,6 +118,8 @@ nextflow run nf-core-callingcards/main.nf  -profile test_sge,singularity -resume
 
 ```
 
+# IGNORE EVERYTHING BELOW
+
 ## Introduction
 
 <!-- TODO nf-core: Write a 1-2 sentence summary of what data the pipeline is for and what it does -->
