@@ -40,7 +40,7 @@ using Windows, you should think about the life choices that have brought you to
 this point, and then partition your hard drive and install ubuntu. Or, google
 about and then let me know what works, and I'll update the readme.
 
-Alternatively, let me know, and I'll send you a a zipped version.
+Alternatively, email me, and I'll send you a a zipped version of the repo.
 
 Note: it isn't necessary to make the cc_tester directory -- call it whatever you
 like, or do this differently. Just make sure the path in the run script below
@@ -67,8 +67,7 @@ Next, copy and paste the script below into a file called, for example, `run_nf.s
 
 mkdir tmp
 
-# choose how you want to handle the dependencies -- I have only tested singularity, but
-# the other likely work
+# CHOOSE ONE OF SINGULARITY, DOCKER OR CONDA. I haven't tested docker. It probably works
 nextflow run nf-core-callingcards/main.nf  -profile test_sge,<singularity/docker/conda> -resume
 
 ```
@@ -78,7 +77,7 @@ in the same directory from which you are launching this script.
 This will run the pipeline locally, meaning the compute resources come from
 the machine from which you launch. Be careful -- don't do this from a login node
 on the cluster, for example. This will work on your local computer, or an interactive
-node with at least 16GB ram.
+node, with at least 16GB ram.
 
 If you want to test this via scheduler submission, then here are examples of
 SLURM and and SGE submission scripts:
@@ -96,7 +95,8 @@ mkdir tmp
 nextflow run callingcards/main.nf  -profile test_slurm,singularity -resume
 ```
 
-__SGE__ (dsg -- the genetics cluster. Note that singularity is not available on the compute nodes, so I am using conda instead)
+
+__SGE__ (dsg -- the genetics cluster. Note that I'm using conda, no singularity, since singularity isn't available on their cluster)
 ```
 #!/bin/bash
 
