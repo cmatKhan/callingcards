@@ -96,7 +96,7 @@ mkdir tmp
 nextflow run callingcards/main.nf  -profile test_slurm,singularity -resume
 ```
 
-__SGE__ (dsg -- the genetics cluster. Note that singularity is not available on the compute nodes)
+__SGE__ (dsg -- the genetics cluster. Note that I'm using conda, since singularity isn't available on their cluster)
 ```
 #!/bin/bash
 
