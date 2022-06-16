@@ -68,7 +68,7 @@ Next, copy and paste the script below into a file called, for example, `run_nf.s
 mkdir tmp
 
 # CHOOSE ONE OF SINGULARITY, DOCKER OR CONDA. I haven't tested docker. It probably works
-nextflow run nf-core-callingcards/main.nf  -profile test_sge,<singularity/docker/conda> -resume
+nextflow run nf-core-callingcards/main.nf  -profile test_human,<singularity/docker/conda> -resume
 
 ```
 Note that this assumes that nextflow is either in your `$PATH`, or the executable is
