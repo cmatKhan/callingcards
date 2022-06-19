@@ -3,7 +3,7 @@ process ADD_RG_AND_TAGS {
     tag "$meta.id"
     label "process_high_cpu_low_mem"
 
-    conda (params.enable_conda ? "conda-forge::pysam=0.17.0" : null)
+    conda (params.enable_conda ? "bioconda::pysam=0.17.0" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/pysam%3A0.17.0--py39h20405f9_1' :
         'quay.io/biocontainers/pysam' }"
@@ -30,8 +30,7 @@ process ADD_RG_AND_TAGS {
           $fasta \\
           $fai \\
           $barcode_length \\
-          $insertion_length \\
-          $task.cpus
+          $insertion_length
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -1,14 +1,21 @@
 #!/usr/bin/env python
 
-# TODO: better docstring
 """
-written by: chase mateusiak 20220126
+written by: chase mateusiak, chasem@wustl.edu
 
-The expectation is that a barcode of length n has been added by UMI tools to the
-ID of each read. This script extracts the unique set of IDs, adds them as @RG
-tags in the header, adds the RG tag to each line, and adds the tags XI and XZ
-to each read, where XI is the insertion coordinates and XZ is the insertion
-sequence.
+This script takes as input a bam file which has a barcode, probably added by
+UMITools, of length n added to the end of each QNAME. The barcode is extracted
+based on length (eg, if the barcode is 13 characters, then 13 characters are
+extracted from the end of the QNAME string of each read). Currently, this
+script loops over the bam file twice -- the first time, extracting the barcode
+from each read, during which a unique set of barcodes are created. Then, a
+write-able bamfile is opened, this unique set of barcodes is added as a RG
+(read group) header, which makes parsing, eg splitting the bam into parts by
+RG possible. Then, a second loop is performed during which the tags RG, XZ and
+XI are added to each read line. RG is the read group (barcode), XZ is the
+coordinate at which the transposon inserted on a given chromosome, and XI is the
+sequence x bases upstream of the insertion site. If the read is unmapped,
+XI and XZ are set to "*".
 """
 # standard library
 import os
@@ -26,7 +33,7 @@ def parse_args(args=None):
                    location"
     Epilog = "Example usage: python add_read_group_and_tags.py \
         <input.bam> <output.bam> <genome.fasta> <genome.fasta.fai> \
-        <id_length> <optional: insertion_length> <optional: nthreads>"
+        <id_length> <optional: insertion_length (default is 1)>"
 
     parser = argparse.ArgumentParser(description=Description, epilog=Epilog)
     parser.add_argument("bampath_in",
@@ -45,9 +52,6 @@ def parse_args(args=None):
                         help = "The length of the transposase insertion. \
                                 Default is 1 since pysam uses 0 based half \
                                     open intervals. [0,1) returns 1 base",
-                        default = '0')
-    parser.add_argument("nthreads",
-                        help="number of threads",
                         default = '1')
 
     return parser.parse_args(args)
@@ -66,7 +70,7 @@ def print_error(error, context="Line", context_str=""):
 
 
 def add_read_group_and_tags(bampath_in, bampath_out, genome_path,
-                   genome_index_path, id_length, insertion_length, nthreads):
+                   genome_index_path, id_length, insertion_length):
     """
     :param bampath_in: path to the sorted, indexed bam file with UMI IDs
                        in the ID entry
@@ -75,7 +79,6 @@ def add_read_group_and_tags(bampath_in, bampath_out, genome_path,
     :param genome_index_path:
     :param id_length: length of the barcode which is appended, after an _,
                       to the read id
-    :param nthreads: number of threads to run in parallel during index/sort
 
     Look at each read, extract the ID, add it as a tag (tag prefix RG) and
     write out to another bam. Output is the same bam, but with RG:<index>
@@ -116,10 +119,15 @@ def add_read_group_and_tags(bampath_in, bampath_out, genome_path,
     for read in input_bamfile.fetch():
 
         # Extract XI and XZ tags -----------------------------------------------
-        # the flag is cast to an int and then a bitwise operation is performed
-        # if the result is not zero, then the read is reverse complement.
         region_dict = dict()
-        if read.flag & 0x10:
+        # (using the bitwise operator) check if the read is unmapped,
+        # if so, set the region_dict start and end to *, indicating that there is
+        # no alignment, and so there is no start and end region for the alignment
+        if read.flag & 0x4 or read.flag & 0x8:
+            region_dict['start'] = "*"
+            region_dict['end']   = "*"
+        # if the bit flag 0x10 is set, the read reverse strand. Handle accordingly
+        elif read.flag & 0x10:
             # A cigartuple looks like [(0,4), (2,2), (1,6),..,(4,68)] if read
             # is reverse complement. If it is forward, it would have the (4,68),
             # in this case, in the first position.
@@ -129,42 +137,79 @@ def add_read_group_and_tags(bampath_in, bampath_out, genome_path,
             # (0,30). 4 is cigar S or BAM_CSOFT_CLIP. The list operation below
             # extracts the length of cigar operation 4 and returns a integer.
             # if 4 DNE, then soft_clip_length is 0.
-            soft_clip_length = read.cigartuples[-1][1] \
-                if read.cigartuples[-1][0] == 4 \
-                else 0
+            try:
+                soft_clip_length = read.cigartuples[-1][1] \
+                    if read.cigartuples[-1][0] == 4 \
+                    else 0
+            except TypeError:
+                sys.exit("In bamfile %s, for read %s, cigar string %s \
+                          is not parse-able" %
+                (bampath_in, read.query_name, read.cigartuples))
             # The insertion point is at the end of the alignment
             insert = read.reference_end
+            if insert is None:
+                raise TypeError("failure to get read.reference_end from \
+                                 read %s in bamfile %s"
+                                %(read.query_name, bampath_in))
             # adjust insert for soft clipping
-            insert = insert + soft_clip_length
+            # prevent from extending past end of chr
+            insert = min(genome.get_reference_length(read.reference_name),
+                         insert + soft_clip_length)
             # The span of the n bases preceding the insertion are:
             # [insert, insert + n)
             region_dict['start'] = insert
-            region_dict['end']   = insert + insertion_length
+            # make sure the insert doesn't extend beyond the chr
+            region_dict['end'] = min(genome.get_reference_length(read.reference_name),
+                                     insert + insertion_length)
         # else, Read is in the forward orientation
         else:
             # see if clause for lengthy explanation. This examines the first
             # operation in the cigar string. If it is a soft clip (code 4),
             # the length of the soft clipping is stored. Else there is 0 soft
             # clipping
-            soft_clip_length = read.cigartuples[0][1] \
-                if read.cigartuples[0][0] == 4 \
-                else 0
+            try:
+                soft_clip_length = read.cigartuples[0][1] \
+                    if read.cigartuples[0][0] == 4 \
+                    else 0
+            except TypeError:
+                sys.exit("In bamfile %s, for read %s, cigar string %s is \
+                          not parse-able" %
+                (bampath_in, read.query_name, read.cigartuples))
             # extract insert position
             insert = read.reference_start
+            if insert is None:
+                raise TypeError("failure to get read.reference_start from read \
+                                 %s in bamfile %s"
+                                %(read.query_name, bampath_in))
             # adjust insert for soft clipping
-            insert = insert - soft_clip_length
+            # prevent from extending past end of chr
+            insert = max(0,insert - soft_clip_length)
             # The span of the n bases preceding the insertions are:
-            # [insert - n, insert)
-            region_dict['start'] = insert - insertion_length
+            # [insert - n, insert). Take 'max' to prevent the 'start' value
+            # from extending past the end of the chromosome
+            region_dict['start'] = max(0,insert - insertion_length)
             region_dict['end']   = insert
 
         # Create the tag strings -----------------------------------------------
         tag_dict = dict()
         tag_dict['RG'] = read.query_name[-id_length:]
         tag_dict['XI'] = region_dict['start']
-        tag_dict['XZ'] = genome.fetch(read.reference_name,
-                              region_dict['start'],
-                              region_dict['end']).upper()
+        # if the read was unmapped, set XZ to "*"
+        if region_dict['start'] == "*" and region_dict['end'] == "*":
+            tag_dict['XZ'] = "*"
+        else:
+            try:
+                tag_dict['XZ'] = genome.fetch(read.reference_name,
+                                    region_dict['start'],
+                                    region_dict['end']).upper()
+            except ValueError:
+                sys.exit("In bamfile %s, for read %s, insert region %s:%s-%s \
+                          is out of bounds" %
+                        (bampath_in,
+                        read.query_name,
+                        read.reference_name,
+                        region_dict['start'],
+                        region_dict['end']))
 
         # Set tags -------------------------------------------------------------
         # the list comprehension outputs [None, None, None, ...]. Out catches
@@ -180,9 +225,9 @@ def add_read_group_and_tags(bampath_in, bampath_out, genome_path,
     input_bamfile.close()
 
     # Re-index the output ------------------------------------------------------
-    # This is only here only to prevent the message:
-    # WARNING: bam timestamp and read timestamp are different that you sometimes
-    # get when the bam is modified after the index is created
+    # This is only here only to prevent the warning message:
+    # bam timestamp and read timestamp are different
+    # that you sometimes get when the bam is modified after the index is created
     pysam.index(bampath_out)
 
 def main(args=None):
@@ -192,20 +237,18 @@ def main(args=None):
     input_path_list = [args.bampath_in,
                        args.genome_path,
                        args.genome_index_path]
-    # todo: throw fileDNE error, catch and sys.exit there, else
-    # add_read_group_and_tags
     for input_path in input_path_list:
         if not os.path.exists(input_path):
-            sys.exit("ADD_READ_GROUP_AND_TAGS_ERROR: Input file \
-                      does not exists: {}".format(input_path))
+            raise FileNotFoundError("Input file DNE: %s" %input_path)
 
+    # loop over the reads in the bam file and add the read group (header and tag)
+    # and the XI and XZ tags
     add_read_group_and_tags(args.bampath_in,
                             args.bampath_out,
                             args.genome_path,
                             args.genome_index_path,
                             int(args.id_length),
-                            int(args.insertion_length),
-                            args.nthreads)
+                            int(args.insertion_length))
 
     sys.exit(0)
 

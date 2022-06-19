@@ -42,6 +42,11 @@
                     "description": "the combined length of the barcodes in R1 and R2",
                     "default": 13
                 },
+                "insertion_length": {
+                    "type": "integer",
+                    "default": 1,
+                    "description": "length of the insertion sequence upstream of the insertion site (mammals only)"
+                },
                 "r1_bc_pattern": {
                     "type": "string",
                     "default": "NNNNNNNNXXXX",
@@ -119,7 +124,7 @@
                 },
                 "fasta_index": {
                     "type": "string",
-                    "default": null
+                    "default": "None"
                 },
                 "igenomes_base": {
                     "type": "string",
