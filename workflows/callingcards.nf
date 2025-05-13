@@ -11,7 +11,7 @@ include { ALIGN                                            } from "../subworkflo
 include { PROCESS_ALIGNMENTS as YEAST_PROCESS_ALIGNMENTS   } from "../subworkflows/local/yeast/process_alignments.nf"
 include { PROCESS_ALIGNMENTS as MAMMALS_PROCESS_ALIGNMENTS } from "../subworkflows/local/mammals/process_alignments.nf"
 include { MULTIQC                                          } from "../modules/nf-core/multiqc"
-include { paramsSummaryMap                                 } from 'plugin/nf-validation'
+include { paramsSummaryMap                                 } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc                             } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML                           } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText                           } from '../subworkflows/local/utils_nfcore_callingcards_pipeline'
